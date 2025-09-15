@@ -3,34 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Web Builder v2 (AI ဝဘ်ဆိုဒ်တည်ဆောက်သူ)</title>
+    <title>AI Web Builder v3 (အလုပ်လုပ်သည့် ဗားရှင်း)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* Custom scrollbar for webkit browsers */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
-        }
-        /* Styling for code blocks */
+        /* Webkit-based browsers များအတွက် scrollbar ဒီဇိုင်း */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* Code block များအတွက် ဒီဇိုင်း */
         pre {
             position: relative;
             background-color: #282c34;
             border-radius: 0.5rem;
             padding: 1rem;
-            padding-top: 3rem; /* Space for buttons and filename */
+            padding-top: 3.2rem; /* ခေါင်းစဉ်အတွက် နေရာချန်ခြင်း */
             font-size: 0.875rem;
             overflow-x: auto;
             color: #abb2bf;
@@ -51,10 +42,7 @@
             font-size: 0.8rem;
             color: #9da5b4;
         }
-        .code-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
+        .code-buttons { display: flex; gap: 0.5rem; }
         .code-btn {
             background-color: #4a5568;
             color: white;
@@ -66,22 +54,10 @@
             opacity: 0.8;
             transition: opacity 0.2s, background-color 0.2s;
         }
-        .code-btn:hover {
-            opacity: 1;
-            background-color: #5a687f;
-        }
-        .message-content img { max-width: 100%; border-radius: 0.5rem; }
-        .message-content a { color: #60a5fa; text-decoration: underline; }
-        .message-content ul, .message-content ol { padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .message-content li { margin-bottom: 0.25rem; }
+        .code-btn:hover { opacity: 1; background-color: #5a687f; }
 
-        /* File Preview Pills */
-        #file-preview-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            padding: 0.5rem 0;
-        }
+        /* တင်ထားသောဖိုင်များကို ပြသရန် ဒီဇိုင်း */
+        #file-preview-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 0.5rem; }
         .file-pill {
             display: flex;
             align-items: center;
@@ -92,33 +68,29 @@
             font-size: 0.8rem;
             max-width: 200px;
         }
-        .file-name {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .remove-file-btn {
             margin-left: 0.5rem;
             background: none;
             border: none;
             color: #94a3b8;
             cursor: pointer;
-            font-weight: bold;
+            font-size: 1.2rem;
+            line-height: 1;
+            padding: 0;
         }
-        .remove-file-btn:hover {
-            color: #e2e8f0;
-        }
+        .remove-file-btn:hover { color: #e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-900 text-white font-sans antialiased">
     <div class="flex h-screen w-full">
-        <!-- Chat Panel -->
+        <!-- Chat Panel (ဘယ်ဘက်ခြမ်း) -->
         <div class="flex flex-col w-full lg:w-1/2 h-screen bg-slate-800">
             <header class="bg-slate-950 p-4 border-b border-slate-700 shadow-md">
-                <h1 class="text-xl font-bold text-sky-400">AI Web Builder v2</h1>
+                <h1 class="text-xl font-bold text-sky-400">AI Web Builder v3</h1>
             </header>
 
-            <!-- Chat History -->
+            <!-- Chat History (စကားပြောမှတ်တမ်း) -->
             <div id="chat-history" class="flex-1 p-4 overflow-y-auto space-y-4">
                 <div class="flex items-start gap-3">
                     <div class="bg-sky-500 p-2 rounded-full flex-shrink-0">
@@ -126,12 +98,12 @@
                     </div>
                     <div class="bg-slate-700 rounded-lg p-3 max-w-xl">
                         <p class="font-semibold text-sky-300 mb-1">AI</p>
-                        <p class="text-slate-300">မင်္ဂလာပါ။ ကျွန်တော်က AI Web Builder v2 ပါ။ ဖိုင်အများအပြားတင်ပြီး Website များကို အဆင့်မြင့်ပြင်ဆင်နိုင်ပါပြီ။ ဘာတွေကူညီပေးရမလဲခင်ဗျာ။</p>
+                        <p class="text-slate-300">မင်္ဂလာပါ။ AI Web Builder ရဲ့ တည်ငြိမ်မှုရှိတဲ့ ဗားရှင်းမှ ကြိုဆိုပါတယ်။ ဖိုင်မျိုးစုံတင်ပြီး Website တွေကို တည်ဆောက်၊ ပြင်ဆင်နိုင်ပါပြီ။</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Input Area -->
+            <!-- Input Area (စာရိုက်ရန်နေရာ) -->
             <div class="p-4 bg-slate-900 border-t border-slate-700">
                  <div id="file-preview-container"></div>
                 <div class="flex items-center bg-slate-800 rounded-lg p-2">
@@ -145,7 +117,7 @@
             </div>
         </div>
 
-        <!-- Preview Panel -->
+        <!-- Preview Panel (ညာဘက်ခြမ်း) -->
         <div class="hidden lg:flex flex-col w-1/2 h-screen bg-slate-900 border-l border-slate-700">
             <header class="bg-slate-950 p-4 border-b border-slate-700 shadow-md">
                 <h2 class="text-xl font-bold text-emerald-400">တိုက်ရိုက် အစမ်းကြည့်ရှုခြင်း (Live Preview)</h2>
@@ -157,7 +129,7 @@
     </div>
 
     <script>
-        // --- DOM Elements ---
+        // --- HTML Element များကို JavaScript Variable များအဖြစ် သတ်မှတ်ခြင်း ---
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
         const uploadButton = document.getElementById('upload-button');
@@ -166,15 +138,16 @@
         const previewFrame = document.getElementById('preview-frame');
         const filePreviewContainer = document.getElementById('file-preview-container');
 
-        // --- State ---
-        let uploadedFiles = [];
-        let isAIGenerating = false;
+        // --- State Variables (အခြေအနေထိန်းသိမ်းရန်) ---
+        let uploadedFiles = []; // တင်ထားသောဖိုင်များကို သိမ်းဆည်းရန် Array
+        let isAIGenerating = false; // AI အလုပ်လုပ်နေသလား စစ်ဆေးရန်
 
-        // --- API Configuration ---
+        // --- Gemini API Configuration ---
         const API_KEY = 'AIzaSyCOJ7PqrIcotDtohVor1E0mRpGWOGvxLgE';
-        const API_URL = `https://generativelace.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+        // CORRECTED API URL - အရင်ကုဒ်မှ အမှားကို ဤနေရာတွင် ပြင်ထားသည်
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
 
-        // --- Event Listeners ---
+        // --- Event Listeners (ခလုတ်များနှိပ်လျှင် အလုပ်လုပ်ရန်) ---
         sendButton.addEventListener('click', handleSendMessage);
         userInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -186,52 +159,46 @@
         fileUpload.addEventListener('change', handleFileSelect);
         userInput.addEventListener('input', updateSendButtonState);
 
-        // --- Core Functions ---
+        // --- Functions (အဓိကလုပ်ဆောင်ချက်များ) ---
 
+        /** "ပေးပို့ပါ" ခလုတ်ကို အဖွင့်/အပိတ်လုပ်ရန် */
         function updateSendButtonState() {
             const hasText = userInput.value.trim().length > 0;
             const hasFiles = uploadedFiles.length > 0;
             sendButton.disabled = (!hasText && !hasFiles) || isAIGenerating;
         }
         
+        /** ဖိုင်များ ရွေးချယ်ပြီးသည့်အခါ လုပ်ဆောင်ရန် */
         function handleFileSelect(event) {
-            // Convert FileList to array and append to existing files
             const newFiles = Array.from(event.target.files);
             uploadedFiles.push(...newFiles);
             renderFilePreviews();
             updateSendButtonState();
-            event.target.value = ''; // Reset input to allow re-uploading the same file
+            event.target.value = ''; // တူညီသောဖိုင်ကို ထပ်တင်နိုင်ရန် input ကိုရှင်းခြင်း
         }
 
+        /** တင်ထားသောဖိုင်များကို preview ပြရန် */
         function renderFilePreviews() {
             filePreviewContainer.innerHTML = '';
             uploadedFiles.forEach((file, index) => {
                 const pill = document.createElement('div');
                 pill.className = 'file-pill';
-                
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'file-name';
-                nameSpan.textContent = file.name;
-                nameSpan.title = file.name;
-
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'remove-file-btn';
-                removeBtn.innerHTML = '&times;';
-                removeBtn.title = 'ဖိုင်ကို ဖယ်ရှားမည်';
-                removeBtn.onclick = () => removeFile(index);
-                
-                pill.appendChild(nameSpan);
-                pill.appendChild(removeBtn);
+                pill.innerHTML = `
+                    <span class="file-name" title="${file.name}">${file.name}</span>
+                    <button class="remove-file-btn" title="ဖယ်ရှားမည်" onclick="removeFile(${index})">&times;</button>
+                `;
                 filePreviewContainer.appendChild(pill);
             });
         }
 
+        /** တင်ထားသောဖိုင်ကို ဖယ်ရှားရန် */
         function removeFile(index) {
             uploadedFiles.splice(index, 1);
             renderFilePreviews();
             updateSendButtonState();
         }
 
+        /** "ပေးပို့ပါ" နှိပ်သည့်အခါ AI သို့ message ပို့ရန် */
         async function handleSendMessage() {
             const promptText = userInput.value.trim();
             if ((!promptText && uploadedFiles.length === 0) || isAIGenerating) return;
@@ -240,62 +207,55 @@
             updateSendButtonState();
             displayMessage(promptText || 'တင်ထားသော ဖိုင်များကို စစ်ဆေးရန် တောင်းဆိုသည်', 'user');
             
-            let filesContent = [];
-            if (uploadedFiles.length > 0) {
-                const fileReadPromises = uploadedFiles.map(file => {
-                    return new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = e => resolve({ name: file.name, content: e.target.result });
-                        reader.onerror = e => reject(e);
-                        reader.readAsText(file);
-                    });
+            // ဖိုင်များကို Text အဖြစ်ဖတ်ခြင်း
+            let filesContentPromises = uploadedFiles.map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve({ name: file.name, content: e.target.result });
+                    reader.onerror = e => reject(e);
+                    reader.readAsText(file);
                 });
-                try {
-                    filesContent = await Promise.all(fileReadPromises);
-                } catch (error) {
-                    console.error("Error reading files:", error);
-                    displayMessage('ဖိုင်များကို ဖတ်ရာတွင် အမှားအယွင်းဖြစ်ပွားပါသည်။', 'ai', true);
-                    isAIGenerating = false;
-                    updateSendButtonState();
-                    return;
-                }
-            }
-
-            let fullPrompt = promptText;
-            if (filesContent.length > 0) {
-                const fileStrings = filesContent.map(f => `--- START OF FILE: ${f.name} ---\n${f.content}\n--- END OF FILE: ${f.name} ---`).join('\n\n');
-                fullPrompt = `User has uploaded the following files:\n\n${fileStrings}\n\nUser's instruction: "${promptText}"`;
-            }
-
-            userInput.value = '';
-            uploadedFiles = [];
-            renderFilePreviews();
-
-            const aiMessageContainer = displayMessage('', 'ai'); // Get the container for the AI response
-            showLoadingIndicator(aiMessageContainer);
+            });
 
             try {
+                const filesContent = await Promise.all(filesContentPromises);
+                
+                // AI ကိုပို့မည့် Prompt အပြည့်အစုံကို ပြင်ဆင်ခြင်း
+                let fullPrompt = promptText;
+                if (filesContent.length > 0) {
+                    const fileStrings = filesContent.map(f => `--- START OF FILE: ${f.name} ---\n${f.content}\n--- END OF FILE: ${f.name} ---`).join('\n\n');
+                    fullPrompt = `User has uploaded the following files:\n\n${fileStrings}\n\nUser's instruction: "${promptText}"`;
+                }
+                
+                userInput.value = '';
+                uploadedFiles = [];
+                renderFilePreviews();
+
+                const aiMessageContainer = displayMessage('', 'ai');
+                showLoadingIndicator(aiMessageContainer);
+
+                // AI ကို တကယ်ခေါ်ယူအသုံးပြုခြင်း
                 const response = await callGeminiAPI(fullPrompt);
                 const responseText = response.candidates[0].content.parts[0].text;
-                hideLoadingIndicator(aiMessageContainer);
-                await typeWriterEffect(aiMessageContainer.querySelector('.message-content'), responseText);
+                renderAiResponse(aiMessageContainer, responseText);
+
             } catch (error) {
-                console.error('Error calling Gemini API:', error);
-                hideLoadingIndicator(aiMessageContainer);
-                aiMessageContainer.querySelector('.message-content').innerHTML = '<p class="text-red-400">တောင်းပန်ပါတယ်၊ အမှားအယွင်းတစ်ခု ဖြစ်ပွားခဲ့ပါတယ်။ console ကိုစစ်ဆေးပါ။</p>';
+                console.error('An error occurred:', error);
+                displayMessage(`တောင်းပန်ပါတယ်၊ အမှားအယွင်းတစ်ခု ဖြစ်ပွားခဲ့ပါတယ်။ \nError: ${error.message}`, 'ai', true);
             } finally {
                 isAIGenerating = false;
                 updateSendButtonState();
             }
         }
 
+        /** Gemini API ကို ခေါ်ယူအသုံးပြုသည့် Function */
         async function callGeminiAPI(prompt) {
-             const systemPrompt = `You are a world-class AI web developer and pair programmer.
-1.  **Handle Multiple Files:** When a user asks you to create a website with multiple files (e.g., index.html, admin.html, styles.css), you MUST generate each file in its own separate, clearly labeled markdown code block. For example: \`\`\`html:index.html ...\`\`\` and then \`\`\`css:styles.css ...\`\`\`. The filename after the language is crucial.
-2.  **Completeness is Key:** Provide complete, runnable, and full code. Do not use placeholders like "...". You have a very large token limit, so write extensive and complete code as requested.
-3.  **Use Modern Practices:** Use Tailwind CSS for styling within HTML files unless explicitly asked for separate CSS.
-4.  **Analyze Any File:** You can analyze and process ANY type of text-based file provided (.html, .css, .js, .py, .json, .md, etc.). Follow user instructions precisely for modifications.
-5.  **Multilingual Support:** Respond in the user's language (e.g., Burmese), but always keep the code itself in English.`;
+             const systemPrompt = `You are a world-class AI web developer.
+1.  **Multiple Files:** Generate each requested file (e.g., index.html, styles.css) in its own separate, clearly labeled markdown code block. Use the format: \`\`\`language:filename.ext ...\`\`\`. This is mandatory.
+2.  **Completeness:** Provide complete, runnable, full code. Do not use placeholders. Write extensive and complete code as requested. Your output token limit is very high.
+3.  **Modern Practices:** Use Tailwind CSS for styling within HTML files unless explicitly asked for separate CSS.
+4.  **Analyze Any File:** You can analyze and process ANY text-based file (.html, .css, .js, .py, .json, .md, etc.). Follow user instructions for modifications precisely.
+5.  **Multilingual Support:** Respond conversationally in the user's language (e.g., Burmese), but always keep the code and filenames in English.`;
 
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
@@ -304,7 +264,7 @@
                     temperature: 0.4,
                     topK: 1,
                     topP: 1,
-                    maxOutputTokens: 16384, // Increased token limit for larger projects
+                    maxOutputTokens: 16384, // Website အကြီးများအတွက် Token Limit တိုးထားသည်
                 },
             };
 
@@ -313,13 +273,17 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error(`API request failed with status ${response.status}: ${await response.text()}`);
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+            }
             return await response.json();
         }
 
-        // --- UI & Display Functions ---
+        // --- UI & Display Functions (หน้าจอတွင် ပြသရန် Functions) ---
 
-        function displayMessage(text, sender) {
+        /** Chat box ထဲတွင် Message အသစ်ထည့်ရန် */
+        function displayMessage(text, sender, isError = false) {
             const messageWrapper = document.createElement('div');
             messageWrapper.className = 'flex items-start gap-3';
             
@@ -330,10 +294,11 @@
             const messageContainer = document.createElement('div');
             messageContainer.className = `rounded-lg p-3 max-w-xl w-full ${sender === 'user' ? 'bg-slate-600' : 'bg-slate-700'}`;
             
+            const messageContentHTML = isError ? `<p class="text-red-400 whitespace-pre-wrap">${text}</p>` : (sender === 'user' ? `<p class="whitespace-pre-wrap">${text}</p>` : '');
+            
             messageContainer.innerHTML = `
                 <p class="font-semibold mb-1 ${sender === 'user' ? 'text-indigo-300' : 'text-sky-300'}">${sender === 'user' ? 'သင်' : 'AI'}</p>
-                <div class="message-content">${sender === 'user' ? text : ''}</div>
-            `;
+                <div class="message-content">${messageContentHTML}</div>`;
             
             messageWrapper.innerHTML = iconHTML;
             messageWrapper.appendChild(messageContainer);
@@ -342,128 +307,99 @@
             
             return messageContainer;
         }
-
-        async function typeWriterEffect(element, text) {
-            // Temporarily set raw text to get correct scrolling behavior
-            element.innerText = text;
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-
-            // Render markdown to get final HTML structure
-            const finalHTML = marked.parse(text, { breaks: true, gfm: true });
-            element.innerHTML = ''; // Clear for typing
+        
+        /** AI ၏ တုံ့ပြန်မှုကို chat box တွင် ပြသရန် */
+        function renderAiResponse(container, text) {
+            hideLoadingIndicator(container);
+            const contentDiv = container.querySelector('.message-content');
+            contentDiv.innerHTML = marked.parse(text, { breaks: true, gfm: true });
             
-            // This is a simplified typing effect. It types the whole HTML at once.
-            // A true char-by-char effect on parsed HTML is complex.
-            element.innerHTML = finalHTML;
-            
-            element.querySelectorAll('pre').forEach((preElement) => {
+            contentDiv.querySelectorAll('pre').forEach((preElement) => {
                 const codeElement = preElement.querySelector('code');
                 if (codeElement) {
                     hljs.highlightElement(codeElement);
                     addCodeButtons(preElement);
                 }
             });
-
             chatHistory.scrollTop = chatHistory.scrollHeight;
-            autoRenderFirstHtml(text); // Auto-render after typing is complete
+            autoRenderFirstHtml(text);
         }
 
-
+        /** Code block များတွင် Copy, Download, Preview ခလုတ်များထည့်ရန် */
         function addCodeButtons(preElement) {
             const code = preElement.querySelector('code').innerText;
             const langClass = preElement.querySelector('code').className || 'language-txt';
             
-            let language = langClass.replace('language-', '').split(' ')[0].split(':')[0];
-            let filename = langClass.split(':')[1] || `code.${language || 'txt'}`;
+            const parts = langClass.split(':');
+            const language = parts[0].replace('language-', '');
+            const filename = parts[1] || `code.${language || 'txt'}`;
 
             const header = document.createElement('div');
             header.className = 'code-header';
+            header.innerHTML = `
+                <span>${filename}</span>
+                <div class="code-buttons">
+                    <button class="code-btn download-btn" title="'${filename}' ကို ဒေါင်းလုဒ်ဆွဲမည်">&#x21E9; Download</button>
+                    <button class="code-btn copy-btn" title="ကုဒ်ကို ကူးယူမည်">Copy</button>
+                    ${(language.includes('html') || language.includes('xml')) ? '<button class="code-btn render-btn" title="Preview ကြည့်မည်">Preview</button>' : ''}
+                </div>`;
+            preElement.prepend(header);
             
-            const fileNameSpan = document.createElement('span');
-            fileNameSpan.textContent = filename;
-
-            const buttonsDiv = document.createElement('div');
-            buttonsDiv.className = 'code-buttons';
-
-            // Download Button
-            const downloadBtn = document.createElement('button');
-            downloadBtn.innerHTML = '&#x21E9; Download'; // Downwards arrow
-            downloadBtn.className = 'code-btn';
-            downloadBtn.title = `'${filename}' ကို ဒေါင်းလုဒ်ဆွဲမည်`;
-            downloadBtn.onclick = () => downloadCode(code, filename);
-            buttonsDiv.appendChild(downloadBtn);
-
-            // Copy Button
-            const copyBtn = document.createElement('button');
-            copyBtn.innerText = 'ကူးယူပါ';
-            copyBtn.className = 'code-btn';
-            copyBtn.onclick = () => {
+            // ခလုတ်များအတွက် Event Listeners
+            header.querySelector('.download-btn').onclick = () => downloadCode(code, filename);
+            header.querySelector('.copy-btn').onclick = (e) => {
                 navigator.clipboard.writeText(code).then(() => {
-                    copyBtn.innerText = 'ကူးပြီးပြီ!';
-                    setTimeout(() => { copyBtn.innerText = 'ကူးယူပါ'; }, 2000);
+                    e.target.innerText = 'ကူးပြီးပြီ!';
+                    setTimeout(() => { e.target.innerText = 'Copy'; }, 2000);
                 });
             };
-            buttonsDiv.appendChild(copyBtn);
-
-            // Render Button (only for HTML)
-            if (language.includes('html') || language.includes('xml')) {
-                const renderBtn = document.createElement('button');
-                renderBtn.innerText = 'Preview';
-                renderBtn.className = 'code-btn';
-                renderBtn.onclick = () => updatePreview(code);
-                buttonsDiv.appendChild(renderBtn);
-            }
-            
-            header.appendChild(fileNameSpan);
-            header.appendChild(buttonsDiv);
-            preElement.prepend(header);
+            const renderBtn = header.querySelector('.render-btn');
+            if(renderBtn) renderBtn.onclick = () => updatePreview(code);
         }
 
+        /** Code ကို ဖိုင်အဖြစ် ဒေါင်းလုဒ်ဆွဲရန် */
         function downloadCode(content, filename) {
-            const blob = new Blob([content], { type: 'text/plain' });
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = filename;
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
 
+        /** ပထမဆုံးတွေ့သည့် HTML code ကို အလိုအလျောက် preview ပြရန် */
         function autoRenderFirstHtml(text) {
             const codeBlockRegex = /
-                        const match = text.match(codeBlockRegex);
-            if (match && match[2]) {
-                const code = match[2];
-                if (code.trim().toLowerCase().includes('<html')) {
-                    updatePreview(code);
-                }
+            const match = text.match(codeBlockRegex);
+            if (match && match[2] && match[2].trim().toLowerCase().includes('<html')) {
+                updatePreview(match[2]);
             }
         }
 
+        /** Preview frame ကို update လုပ်ရန် */
         function updatePreview(htmlContent) {
             previewFrame.srcdoc = htmlContent;
         }
 
+        /** Loading animation ပြရန် */
         function showLoadingIndicator(container) {
             const contentDiv = container.querySelector('.message-content');
             contentDiv.innerHTML = `
                 <div class="flex items-center space-x-2">
                     <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse"></div>
-                    <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
-                    <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
-                </div>
-            `;
+                    <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                    <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                </div>`;
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
-
+        
+        /** Loading animation ဖျောက်ရန် */
         function hideLoadingIndicator(container) {
-             const contentDiv = container.querySelector('.message-content');
-             contentDiv.innerHTML = '';
+             container.querySelector('.message-content').innerHTML = '';
         }
         
-        updateSendButtonState(); // Initial check
+        updateSendButtonState(); // စစချင်း ခလုတ်အခြေအနေကို စစ်ဆေးခြင်း
     </script>
 </body>
 </html>
