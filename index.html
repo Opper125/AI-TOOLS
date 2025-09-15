@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Web Builder (AI ဝဘ်ဆိုဒ်တည်ဆောက်သူ)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        /* Basic styling for pre and code blocks for syntax highlighting */
+        pre {
+            position: relative;
+            background-color: #282c34;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            color: #abb2bf;
+        }
+        .copy-button, .render-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .render-button {
+            right: 4.5rem;
+        }
+        pre:hover .copy-button, pre:hover .render-button {
+            opacity: 1;
+        }
+        .message-content img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+        }
+        .message-content a {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
+        .message-content ul, .message-content ol {
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .message-content li {
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white font-sans antialiased">
+    <div class="flex h-screen w-full">
+        <!-- Chat Panel -->
+        <div class="flex flex-col w-full lg:w-1/2 h-screen bg-slate-800">
+            <header class="bg-slate-950 p-4 border-b border-slate-700 shadow-md flex justify-between items-center">
+                <h1 class="text-xl font-bold text-sky-400">AI Web Builder</h1>
+                <div id="file-status" class="text-sm text-slate-400"></div>
+            </header>
+
+            <!-- Chat History -->
+            <div id="chat-history" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <!-- Messages will be appended here -->
+                <div class="flex items-start gap-3">
+                    <div class="bg-sky-500 p-2 rounded-full flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12 8V4H8L4 8v4h4v4l4 4h4v-4h4V8z"/><path d="M8 12v4"/><path d="M12 16v4"/></svg>
+                    </div>
+                    <div class="bg-slate-700 rounded-lg p-3 max-w-xl">
+                        <p class="font-semibold text-sky-300 mb-1">AI</p>
+                        <p class="text-slate-300">မင်္ဂလာပါ။ ကျွန်တော်က AI Web Builder ပါ။ Website တွေတည်ဆောက်ဖို့၊ ပြင်ဆင်ဖို့ ဘာတွေကူညီပေးရမလဲခင်ဗျာ။ Website တစ်ခုလုံးရေးခိုင်းမလား၊ ဒါမှမဟုတ် ဖိုင်တစ်ခုတင်ပြီး ပြင်ခိုင်းမလား ပြောပြနိုင်ပါတယ်။</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-4 bg-slate-900 border-t border-slate-700">
+                <div class="flex items-center bg-slate-800 rounded-lg p-2">
+                    <input type="text" id="user-input" class="flex-1 bg-transparent border-none focus:ring-0 text-slate-200 placeholder-slate-500" placeholder="သင်၏တောင်းဆိုချက်ကို ဤနေရာတွင် ရိုက်ထည့်ပါ...">
+                    <input type="file" id="file-upload" class="hidden">
+                    <button id="upload-button" class="mx-2 p-2 rounded-full hover:bg-slate-700 transition-colors" title="ဖိုင်တင်ပါ။">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    </button>
+                    <button id="send-button" class="bg-sky-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-sky-700 transition-colors">ပေးပို့ပါ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="hidden lg:flex flex-col w-1/2 h-screen bg-slate-900 border-l border-slate-700">
+            <header class="bg-slate-950 p-4 border-b border-slate-700 shadow-md">
+                <h2 class="text-xl font-bold text-emerald-400">တိုက်ရိုက် အစမ်းကြည့်ရှုခြင်း (Live Preview)</h2>
+            </header>
+            <div class="flex-1 bg-white">
+                <iframe id="preview-frame" class="w-full h-full border-none" sandbox="allow-scripts allow-modals allow-forms allow-same-origin"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const uploadButton = document.getElementById('upload-button');
+        const fileUpload = document.getElementById('file-upload');
+        const fileStatus = document.getElementById('file-status');
+        const chatHistory = document.getElementById('chat-history');
+        const previewFrame = document.getElementById('preview-frame');
+
+        // WARNING: Exposing API keys on the client-side is a security risk.
+        // In a production application, this call should be made from a server-side proxy.
+        // The user provided this key to be used directly in the browser.
+        const API_KEY = 'AIzaSyCOJ7PqrIcotDtohVor1E0mRpGWOGvxLgE';
+        const API_URL = `https://generativelace.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+        
+        let uploadedFileContent = null;
+        let uploadedFileName = null;
+
+        // --- Event Listeners ---
+        sendButton.addEventListener('click', handleSendMessage);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        });
+        uploadButton.addEventListener('click', () => fileUpload.click());
+        fileUpload.addEventListener('change', handleFileSelect);
+
+        // --- Functions ---
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedFileContent = e.target.result;
+                uploadedFileName = file.name;
+                fileStatus.textContent = `"${uploadedFileName}" ကို တင်ပြီးပါပြီ။`;
+                userInput.focus();
+            };
+            reader.onerror = () => {
+                fileStatus.textContent = 'ဖိုင်ကိုဖတ်မရပါ။';
+                uploadedFileContent = null;
+                uploadedFileName = null;
+            };
+            reader.readAsText(file);
+        }
+
+        async function handleSendMessage() {
+            const promptText = userInput.value.trim();
+            if (!promptText && !uploadedFileContent) return;
+
+            let fullPrompt = promptText;
+            if (uploadedFileContent) {
+                fullPrompt = `Here is the content of the file "${uploadedFileName}":\n\n\`\`\`\n${uploadedFileContent}\n\`\`\`\n\nNow, please follow this instruction: ${promptText}`;
+            }
+
+            displayMessage(promptText, 'user');
+            userInput.value = '';
+            
+            // Clear file after sending
+            uploadedFileContent = null;
+            uploadedFileName = null;
+            fileStatus.textContent = '';
+            
+            showLoadingIndicator();
+
+            try {
+                const response = await callGeminiAPI(fullPrompt);
+                const responseText = response.candidates[0].content.parts[0].text;
+                displayMessage(responseText, 'ai');
+                
+                // Auto-render complete HTML documents
+                const htmlCode = extractHtmlCode(responseText);
+                if (htmlCode) {
+                    updatePreview(htmlCode);
+                }
+
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                displayMessage('တောင်းပန်ပါတယ်၊ အမှားအယွင်းတစ်ခု ဖြစ်ပွားခဲ့ပါတယ်။ console ကိုစစ်ဆေးပါ။', 'ai', true);
+            } finally {
+                hideLoadingIndicator();
+            }
+        }
+        
+        async function callGeminiAPI(prompt) {
+             const systemPrompt = `You are an expert web developer AI assistant. Your primary purpose is to help users build and modify websites.
+1.  When asked to create a website, provide a complete, single HTML file with all necessary HTML, CSS (using Tailwind CSS if possible), and JavaScript.
+2.  When asked to modify code, analyze the provided code and apply the requested changes, then provide the full, updated code.
+3.  Always format your code responses within markdown code blocks (e.g., \`\`\`html ... \`\`\`).
+4.  You can respond in any language the user uses, but the code itself should be in English.
+5.  Be concise and focus on providing the code solution.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                generationConfig: {
+                    temperature: 0.5,
+                    topK: 1,
+                    topP: 1,
+                    maxOutputTokens: 8192,
+                },
+            };
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json();
+                console.error("API Error Response:", errorBody);
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        function displayMessage(text, sender, isError = false) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'flex items-start gap-3';
+
+            const iconDiv = document.createElement('div');
+            iconDiv.className = `p-2 rounded-full flex-shrink-0 ${sender === 'user' ? 'bg-indigo-500' : 'bg-sky-500'}`;
+            iconDiv.innerHTML = sender === 'user'
+                ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12 8V4H8L4 8v4h4v4l4 4h4v-4h4V8z"/><path d="M8 12v4"/><path d="M12 16v4"/></svg>`;
+            
+            const messageContainer = document.createElement('div');
+            messageContainer.className = `rounded-lg p-3 max-w-xl ${sender === 'user' ? 'bg-slate-600' : 'bg-slate-700'}`;
+
+            const senderName = document.createElement('p');
+            senderName.className = `font-semibold mb-1 ${sender === 'user' ? 'text-indigo-300' : 'text-sky-300'}`;
+            senderName.textContent = sender === 'user' ? 'သင်' : 'AI';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (isError) {
+                messageContent.className = 'text-red-400';
+                messageContent.textContent = text;
+            } else if (sender === 'ai') {
+                // Use marked.js to render markdown, then highlight code blocks
+                messageContent.innerHTML = marked.parse(text, { breaks: true, gfm: true });
+                messageContent.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                    addCodeButtons(block.parentElement);
+                });
+            } else {
+                 messageContent.textContent = text;
+            }
+
+            messageContainer.appendChild(senderName);
+            messageContainer.appendChild(messageContent);
+            messageWrapper.appendChild(iconDiv);
+            messageWrapper.appendChild(messageContainer);
+            chatHistory.appendChild(messageWrapper);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function addCodeButtons(preElement) {
+            const code = preElement.querySelector('code').innerText;
+            
+            // Copy Button
+            const copyBtn = document.createElement('button');
+            copyBtn.innerText = 'ကူးယူပါ';
+            copyBtn.className = 'copy-button';
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(code).then(() => {
+                    copyBtn.innerText = 'ကူးပြီးပါပြီ';
+                    setTimeout(() => { copyBtn.innerText = 'ကူးယူပါ'; }, 2000);
+                });
+            };
+            preElement.appendChild(copyBtn);
+
+            // Render Button (only for HTML)
+            const lang = preElement.querySelector('code').className.toLowerCase();
+            if (lang.includes('html') || lang.includes('xml')) {
+                const renderBtn = document.createElement('button');
+                renderBtn.innerText = 'Preview ကြည့်မည်';
+                renderBtn.className = 'render-button';
+                renderBtn.onclick = () => updatePreview(code);
+                preElement.appendChild(renderBtn);
+            }
+        }
+
+        function extractHtmlCode(text) {
+            const htmlRegex = /```html\s*([\s\S]*?)\s*```/;
+            const match = text.match(htmlRegex);
+            if (match && match[1]) {
+                const code = match[1];
+                // Check if it's a full document
+                if (code.trim().toLowerCase().startsWith('<!doctype html>') || code.trim().toLowerCase().startsWith('<html>')) {
+                    return code;
+                }
+            }
+            return null;
+        }
+
+        function updatePreview(htmlContent) {
+            previewFrame.srcdoc = htmlContent;
+        }
+
+        function showLoadingIndicator() {
+            const loadingWrapper = document.createElement('div');
+            loadingWrapper.id = 'loading-indicator';
+            loadingWrapper.className = 'flex items-start gap-3';
+            loadingWrapper.innerHTML = `
+                <div class="bg-sky-500 p-2 rounded-full flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12 8V4H8L4 8v4h4v4l4 4h4v-4h4V8z"/><path d="M8 12v4"/><path d="M12 16v4"/></svg>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-3 max-w-xl">
+                    <p class="font-semibold text-sky-300 mb-1">AI</p>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse"></div>
+                        <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
+                        <div class="w-2 h-2 bg-slate-300 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+                    </div>
+                </div>
+            `;
+            chatHistory.appendChild(loadingWrapper);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+        
+        function hideLoadingIndicator() {
+            const indicator = document.getElementById('loading-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+    </script>
+</body>
+</html>
+
