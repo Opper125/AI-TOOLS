@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mafia - Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Message Popup -->
+    <div id="messagePopup" class="message-popup">
+        <div class="message-content">
+            <span class="message-text"></span>
+            <div class="message-timer"></div>
+            <button class="message-close">❎</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="mainContainer" class="main-container">
+        <!-- Admin Login -->
+        <section id="adminLogin" class="admin-login">
+            <div class="login-container">
+                <div class="logo-container">
+                    <img src="https://raw.githubusercontent.com/Opper125/AI-TOOLS/663b060262bdf9fb617d1b01d21597eb859e96c3/mafialogo.png" alt="Mafia Logo" class="logo">
+                </div>
+                <h2>Admin Access</h2>
+                <div class="form-group">
+                    <input type="password" id="adminPin" placeholder="Enter Admin PIN" required>
+                    <span class="error-message" id="adminPinError"></span>
+                </div>
+                <button id="adminLoginBtn" class="admin-login-btn">Access Dashboard</button>
+            </div>
+        </section>
+
+        <!-- Admin Dashboard -->
+        <section id="adminDashboard" class="admin-dashboard" style="display: none;">
+            <!-- Header -->
+            <header class="admin-header">
+                <div class="logo-container">
+                    <img src="https://raw.githubusercontent.com/Opper125/AI-TOOLS/663b060262bdf9fb617d1b01d21597eb859e96c3/mafialogo.png" alt="Mafia Logo" class="logo">
+                </div>
+                <nav class="admin-nav">
+                    <button class="nav-btn active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </button>
+                    <button class="nav-btn" data-page="users">
+                        <i class="fas fa-users"></i> Users
+                    </button>
+                    <button class="nav-btn" data-page="products">
+                        <i class="fas fa-box"></i> Products
+                    </button>
+                    <button class="nav-btn" data-page="orders">
+                        <i class="fas fa-shopping-cart"></i> Orders
+                    </button>
+                    <button class="nav-btn" data-page="payments">
+                        <i class="fas fa-credit-card"></i> Payments
+                    </button>
+                    <button class="nav-btn" data-page="news">
+                        <i class="fas fa-newspaper"></i> News
+                    </button>
+                    <button class="nav-btn" data-page="social">
+                        <i class="fas fa-share-alt"></i> Social
+                    </button>
+                    <button class="nav-btn" data-page="about">
+                        <i class="fas fa-info-circle"></i> About
+                    </button>
+                    <button class="logout-btn" id="adminLogoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </nav>
+            </header>
+
+            <!-- Dashboard Page -->
+            <div id="dashboardPage" class="admin-page active">
+                <div class="page-header">
+                    <h1>Admin Dashboard</h1>
+                    <p>Overview of platform statistics</p>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalUsers">0</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="dailyUsers">0</h3>
+                            <p>Today's Registrations</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-week"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="monthlyUsers">0</h3>
+                            <p>This Month</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalOrders">0</h3>
+                            <p>Total Orders</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>User Registration Trends</h3>
+                        <canvas id="userChart" style="height: 400px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Management Page -->
+            <div id="usersPage" class="admin-page">
+                <div class="page-header">
+                    <h1>User Management</h1>
+                    <p>Manage registered users</p>
+                </div>
+                <div class="users-controls">
+                    <input type="text" id="userSearch" placeholder="Search users..." class="search-input">
+                    <button id="refreshUsers" class="refresh-btn">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div id="usersList" class="users-list">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Products Management Page -->
+            <div id="productsPage" class="admin-page">
+                <div class="page-header">
+                    <h1>Product Management</h1>
+                    <button class="add-btn" id="addProductBtn">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                <div id="productsList" class="products-list">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Orders Management Page -->
+            <div id="ordersPage" class="admin-page">
+                <div class="page-header">
+                    <h1>Order Management</h1>
+                    <p>Review and approve orders</p>
+                </div>
+                <div class="orders-filters">
+                    <select id="orderStatusFilter" class="filter-select">
+                        <option value="">All Orders</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button id="refreshOrders" class="refresh-btn">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div id="ordersList" class="orders-list">
+                    <!-- Orders will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Payments Management Page -->
+            <div id="paymentsPage" class="admin-page">
+                <div class="page-header">
+                    <h1>Payment Methods</h1>
+                    <button class="add-btn" id="addPaymentBtn">
+                        <i class="fas fa-plus"></i> Add Payment Method
+                    </button>
+                </div>
+                <div id="paymentsList" class="payments-list">
+                    <!-- Payment methods will be loaded here -->
+                </div>
+            </div>
+
+            <!-- News Management Page -->
+            <div id="newsPage" class="admin-page">
+                <div class="page-header">
+                    <h1>News Management</h1>
+                    <button class="add-btn" id="addNewsBtn">
+                        <i class="fas fa-plus"></i> Add News</button>
+                </div>
+                <div id="newsList" class="news-list">
+                    <!-- News will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Social Media Management Page -->
+            <div id="socialPage" class="admin-page">
+                <div class="page-header">
+                    <h1>Social Media Links</h1>
+                    <button class="add-btn" id="addSocialBtn">
+                        <i class="fas fa-plus"></i> Add Social Link
+                    </button>
+                </div>
+                <div id="socialList" class="social-list">
+                    <!-- Social links will be loaded here -->
+                </div>
+            </div>
+
+            <!-- About Management Page -->
+            <div id="aboutPage" class="admin-page">
+                <div class="page-header">
+                    <h1>About Section</h1>
+                    <p>Manage company information</p>
+                </div>
+                <div id="aboutForm" class="about-form">
+                    <!-- About form will be loaded here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal for forms -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Modal Title</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- User Details Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>User Details</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="userModalBody">
+                <!-- User details -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Order Details</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="orderModalBody">
+                <!-- Order details -->
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
