@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Style Management System - Gaming Platform Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="style-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-palette"></i>
+                <span>Style Manager</span>
+            </div>
+            <div class="nav-actions">
+                <button class="nav-btn" id="previewToggle">
+                    <i class="fas fa-eye"></i>
+                    <span>Live Preview</span>
+                </button>
+                <button class="nav-btn" id="saveStyles">
+                    <i class="fas fa-save"></i>
+                    <span>Save Changes</span>
+                </button>
+                <button class="nav-btn" id="resetStyles">
+                    <i class="fas fa-undo"></i>
+                    <span>Reset</span>
+                </button>
+                <a href="admin.html" class="nav-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Admin</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="style-container">
+        <!-- Sidebar -->
+        <aside class="style-sidebar">
+            <div class="sidebar-header">
+                <h3>Style Categories</h3>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="global">
+                    <i class="fas fa-globe"></i>
+                    <span>Global Variables</span>
+                </a>
+                <a href="#" class="nav-item" data-section="layout">
+                    <i class="fas fa-th-large"></i>
+                    <span>Layout Controls</span>
+                </a>
+                <a href="#" class="nav-item" data-section="components">
+                    <i class="fas fa-cubes"></i>
+                    <span>Components</span>
+                </a>
+                <a href="#" class="nav-item" data-section="typography">
+                    <i class="fas fa-font"></i>
+                    <span>Typography</span>
+                </a>
+                <a href="#" class="nav-item" data-section="colors">
+                    <i class="fas fa-paint-brush"></i>
+                    <span>Colors & Themes</span>
+                </a>
+                <a href="#" class="nav-item" data-section="animations">
+                    <i class="fas fa-magic"></i>
+                    <span>Animations</span>
+                </a>
+                <a href="#" class="nav-item" data-section="advanced">
+                    <i class="fas fa-cogs"></i>
+                    <span>Advanced</span>
+                </a>
+            </nav>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h4>Quick Actions</h4>
+                <button class="quick-btn" id="exportStyles">
+                    <i class="fas fa-download"></i>
+                    Export Styles
+                </button>
+                <button class="quick-btn" id="importStyles">
+                    <i class="fas fa-upload"></i>
+                    Import Styles
+                </button>
+                <button class="quick-btn" id="duplicateTheme">
+                    <i class="fas fa-copy"></i>
+                    Duplicate Theme
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="style-main">
+            <!-- Global Variables Section -->
+            <section id="global-section" class="style-section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-globe"></i> Global Variables</h2>
+                    <p>Customize global CSS variables that affect the entire website</p>
+                </div>
+
+                <div class="control-grid">
+                    <!-- Primary Colors -->
+                    <div class="control-group">
+                        <h3>Primary Colors</h3>
+                        <div class="control-row">
+                            <label for="primaryColor">Primary Color</label>
+                            <input type="color" id="primaryColor" name="primaryColor" value="#007bff">
+                            <input type="text" class="color-input" placeholder="#007bff">
+                        </div>
+                        <div class="control-row">
+                            <label for="secondaryColor">Secondary Color</label>
+                            <input type="color" id="secondaryColor" name="secondaryColor" value="#6c757d">
+                            <input type="text" class="color-input" placeholder="#6c757d">
+                        </div>
+                        <div class="control-row">
+                            <label for="accentColor">Accent Color</label>
+                            <input type="color" id="accentColor" name="accentColor" value="#28a745">
+                            <input type="text" class="color-input" placeholder="#28a745">
+                        </div>
+                    </div>
+
+                    <!-- Background Settings -->
+                    <div class="control-group">
+                        <h3>Background Settings</h3>
+                        <div class="control-row">
+                            <label for="bgType">Background Type</label>
+                            <select id="bgType" name="bgType">
+                                <option value="solid">Solid Color</option>
+                                <option value="gradient">Gradient</option>
+                                <option value="image">Background Image</option>
+                            </select>
+                        </div>
+                        <div class="control-row" id="bgColorRow">
+                            <label for="bgColor">Background Color</label>
+                            <input type="color" id="bgColor" name="bgColor" value="#ffffff">
+                            <input type="text" class="color-input" placeholder="#ffffff">
+                        </div>
+                        <div class="control-row hidden" id="bgGradientRow">
+                            <label for="gradientStart">Gradient Start</label>
+                            <input type="color" id="gradientStart" name="gradientStart" value="#007bff">
+                            <label for="gradientEnd">Gradient End</label>
+                            <input type="color" id="gradientEnd" name="gradientEnd" value="#0056b3">
+                        </div>
+                        <div class="control-row hidden" id="bgImageRow">
+                            <label for="bgImage">Background Image URL</label>
+                            <input type="url" id="bgImage" name="bgImage" placeholder="https://example.com/image.jpg">
+                        </div>
+                    </div>
+
+                    <!-- Font Settings -->
+                    <div class="control-group">
+                        <h3>Font Settings</h3>
+                        <div class="control-row">
+                            <label for="primaryFont">Primary Font Family</label>
+                            <select id="primaryFont" name="primaryFont">
+                                <option value="Inter, sans-serif">Inter</option>
+                                <option value="Roboto, sans-serif">Roboto</option>
+                                <option value="Open Sans, sans-serif">Open Sans</option>
+                                <option value="Lato, sans-serif">Lato</option>
+                                <option value="Montserrat, sans-serif">Montserrat</option>
+                                <option value="Poppins, sans-serif">Poppins</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <label for="baseFontSize">Base Font Size</label>
+                            <input type="range" id="baseFontSize" name="baseFontSize" min="12" max="20" value="14" step="1">
+                            <span class="range-value">14px</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Layout Controls Section -->
+            <section id="layout-section" class="style-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-th-large"></i> Layout Controls</h2>
+                    <p>Adjust positioning, spacing, and layout structure</p>
+                </div>
+
+                <div class="control-grid">
+                    <!-- Container Settings -->
+                    <div class="control-group">
+                        <h3>Container Settings</h3>
+                        <div class="control-row">
+                            <label for="maxWidth">Max Container Width</label>
+                            <input type="range" id="maxWidth" name="maxWidth" min="960" max="1920" value="1200" step="20">
+                            <span class="range-value">1200px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="containerPadding">Container Padding</label>
+                            <input type="range" id="containerPadding" name="containerPadding" min="0" max="40" value="20" step="2">
+                            <span class="range-value">20px</span>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Layout -->
+                    <div class="control-group">
+                        <h3>Navigation Layout</h3>
+                        <div class="control-row">
+                            <label for="navHeight">Navigation Height</label>
+                            <input type="range" id="navHeight" name="navHeight" min="50" max="100" value="70" step="5">
+                            <span class="range-value">70px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="navPosition">Navigation Position</label>
+                            <select id="navPosition" name="navPosition">
+                                <option value="static">Static</option>
+                                <option value="fixed">Fixed Top</option>
+                                <option value="sticky">Sticky</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Grid Settings -->
+                    <div class="control-group">
+                        <h3>Grid Settings</h3>
+                        <div class="control-row">
+                            <label for="gridGap">Grid Gap</label>
+                            <input type="range" id="gridGap" name="gridGap" min="10" max="40" value="20" step="2">
+                            <span class="range-value">20px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="cardColumns">Card Columns (Desktop)</label>
+                            <input type="range" id="cardColumns" name="cardColumns" min="2" max="6" value="3" step="1">
+                            <span class="range-value">3</span>
+                        </div>
+                    </div>
+
+                    <!-- Spacing -->
+                    <div class="control-group">
+                        <h3>Spacing</h3>
+                        <div class="control-row">
+                            <label for="sectionPadding">Section Padding</label>
+                            <input type="range" id="sectionPadding" name="sectionPadding" min="20" max="80" value="40" step="5">
+                            <span class="range-value">40px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="elementMargin">Element Margin</label>
+                            <input type="range" id="elementMargin" name="elementMargin" min="5" max="30" value="15" step="1">
+                            <span class="range-value">15px</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Components Section -->
+            <section id="components-section" class="style-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cubes"></i> Component Styling</h2>
+                    <p>Customize buttons, cards, inputs, and other UI components</p>
+                </div>
+
+                <div class="control-grid">
+                    <!-- Button Styles -->
+                    <div class="control-group">
+                        <h3>Button Styles</h3>
+                        <div class="control-row">
+                            <label for="buttonRadius">Button Border Radius</label>
+                            <input type="range" id="buttonRadius" name="buttonRadius" min="0" max="30" value="8" step="1">
+                            <span class="range-value">8px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="buttonPadding">Button Padding</label>
+                            <input type="range" id="buttonPadding" name="buttonPadding" min="8" max="24" value="12" step="2">
+                            <span class="range-value">12px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="buttonShadow">Button Shadow</label>
+                            <input type="checkbox" id="buttonShadow" name="buttonShadow" checked>
+                        </div>
+                        <div class="control-row">
+                            <label for="buttonHover">Hover Effect</label>
+                            <select id="buttonHover" name="buttonHover">
+                                <option value="scale">Scale</option>
+                                <option value="shadow">Shadow</option>
+                                <option value="color">Color Change</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Card Styles -->
+                    <div class="control-group">
+                        <h3>Card Styles</h3>
+                        <div class="control-row">
+                            <label for="cardRadius">Card Border Radius</label>
+                            <input type="range" id="cardRadius" name="cardRadius" min="0" max="20" value="12" step="1">
+                            <span class="range-value">12px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="cardShadow">Card Shadow Intensity</label>
+                            <input type="range" id="cardShadow" name="cardShadow" min="0" max="10" value="3" step="1">
+                            <span class="range-value">3</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="cardPadding">Card Padding</label>
+                            <input type="range" id="cardPadding" name="cardPadding" min="10" max="30" value="20" step="2">
+                            <span class="range-value">20px</span>
+                        </div>
+                    </div>
+
+                    <!-- Input Styles -->
+                    <div class="control-group">
+                        <h3>Input Styles</h3>
+                        <div class="control-row">
+                            <label for="inputRadius">Input Border Radius</label>
+                            <input type="range" id="inputRadius" name="inputRadius" min="0" max="15" value="6" step="1">
+                            <span class="range-value">6px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="inputHeight">Input Height</label>
+                            <input type="range" id="inputHeight" name="inputHeight" min="30" max="50" value="40" step="2">
+                            <span class="range-value">40px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="inputBorder">Input Border Style</label>
+                            <select id="inputBorder" name="inputBorder">
+                                <option value="solid">Solid</option>
+                                <option value="dashed">Dashed</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Modal Styles -->
+                    <div class="control-group">
+                        <h3>Modal Styles</h3>
+                        <div class="control-row">
+                            <label for="modalRadius">Modal Border Radius</label>
+                            <input type="range" id="modalRadius" name="modalRadius" min="0" max="20" value="12" step="1">
+                            <span class="range-value">12px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="modalBackdrop">Backdrop Opacity</label>
+                            <input type="range" id="modalBackdrop" name="modalBackdrop" min="0" max="100" value="80" step="5">
+                            <span class="range-value">80%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Typography Section -->
+            <section id="typography-section" class="style-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-font"></i> Typography</h2>
+                    <p>Customize text styles, headings, and font properties</p>
+                </div>
+
+                <div class="control-grid">
+                    <!-- Heading Styles -->
+                    <div class="control-group">
+                        <h3>Heading Styles</h3>
+                        <div class="control-row">
+                            <label for="h1Size">H1 Font Size</label>
+                            <input type="range" id="h1Size" name="h1Size" min="24" max="48" value="32" step="1">
+                            <span class="range-value">32px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="h2Size">H2 Font Size</label>
+                            <input type="range" id="h2Size" name="h2Size" min="20" max="40" value="28" step="1">
+                            <span class="range-value">28px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="h3Size">H3 Font Size</label>
+                            <input type="range" id="h3Size" name="h3Size" min="16" max="32" value="24" step="1">
+                            <span class="range-value">24px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="headingWeight">Heading Font Weight</label>
+                            <select id="headingWeight" name="headingWeight">
+                                <option value="400">Normal</option>
+                                <option value="500">Medium</option>
+                                <option value="600" selected>Semi Bold</option>
+                                <option value="700">Bold</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Body Text -->
+                    <div class="control-group">
+                        <h3>Body Text</h3>
+                        <div class="control-row">
+                            <label for="bodySize">Body Font Size</label>
+                            <input type="range" id="bodySize" name="bodySize" min="12" max="20" value="14" step="1">
+                            <span class="range-value">14px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="lineHeight">Line Height</label>
+                            <input type="range" id="lineHeight" name="lineHeight" min="1.2" max="2" value="1.5" step="0.1">
+                            <span class="range-value">1.5</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="letterSpacing">Letter Spacing</label>
+                            <input type="range" id="letterSpacing" name="letterSpacing" min="-0.05" max="0.1" value="0" step="0.01">
+                            <span class="range-value">0em</span>
+                        </div>
+                    </div>
+
+                    <!-- Text Colors -->
+                    <div class="control-group">
+                        <h3>Text Colors</h3>
+                        <div class="control-row">
+                            <label for="textPrimary">Primary Text Color</label>
+                            <input type="color" id="textPrimary" name="textPrimary" value="#333333">
+                            <input type="text" class="color-input" placeholder="#333333">
+                        </div>
+                        <div class="control-row">
+                            <label for="textSecondary">Secondary Text Color</label>
+                            <input type="color" id="textSecondary" name="textSecondary" value="#666666">
+                            <input type="text" class="color-input" placeholder="#666666">
+                        </div>
+                        <div class="control-row">
+                            <label for="textMuted">Muted Text Color</label>
+                            <input type="color" id="textMuted" name="textMuted" value="#999999">
+                            <input type="text" class="color-input" placeholder="#999999">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Colors & Themes Section -->
+            <section id="colors-section" class="style-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-paint-brush"></i> Colors & Themes</h2>
+                    <p>Manage color schemes and theme presets</p>
+                </div>
+
+                <div class="control-grid">
+                    <!-- Theme Presets -->
+                    <div class="control-group full-width">
+                        <h3>Theme Presets</h3>
+                        <div class="theme-grid">
+                            <div class="theme-preset active" data-theme="default">
+                                <div class="theme-colors">
+                                    <div class="color-swatch" style="background: #007bff;"></div>
+                                    <div class="color-swatch" style="background: #6c757d;"></div>
+                                    <div class="color-swatch" style="background: #28a745;"></div>
+                                </div>
+                                <span>Default Blue</span>
+                            </div>
+                            <div class="theme-preset" data-theme="gaming">
+                                <div class="theme-colors">
+                                    <div class="color-swatch" style="background: #ff6b35;"></div>
+                                    <div class="color-swatch" style="background: #f7931e;"></div>
+                                    <div class="color-swatch" style="background: #ffd23f;"></div>
+                                </div>
+                                <span>Gaming Orange</span>
+                            </div>
+                            <div class="theme-preset" data-theme="purple">
+                                <div class="theme-colors">
+                                    <div class="color-swatch" style="background: #6f42c1;"></div>
+                                    <div class="color-swatch" style="background: #e83e8c;"></div>
+                                    <div class="color-swatch" style="background: #fd7e14;"></div>
+                                </div>
+                                <span>Purple Galaxy</span>
+                            </div>
+                            <div class="theme-preset" data-theme="green">
+                                <div class="theme-colors">
+                                    <div class="color-swatch" style="background: #28a745;"></div>
+                                    <div class="color-swatch" style="background: #20c997;"></div>
+                                    <div class="color-swatch" style="background: #17a2b8;"></div>
+                                </div>
+                                <span>Nature Green</span>
+                            </div>
+                            <div class="theme-preset" data-theme="dark">
+                                <div class="theme-colors">
+                                    <div class="color-swatch" style="background: #343a40;"></div>
+                                    <div class="color-swatch" style="background: #495057;"></div>
+                                    <div class="color-swatch" style="background: #6c757d;"></div>
+                                </div>
+                                <span>Dark Mode</span>
+                            </div>
+                            <div class="theme-preset" data-theme="custom">
+                                <div class="theme-colors">
+                                    <div class="color-swatch" style="background: linear-gradient(45deg, #ff0000, #0000ff);"></div>
+                                    <div class="color-swatch" style="background: linear-gradient(45deg, #00ff00, #ffff00);"></div>
+                                    <div class="color-swatch" style="background: linear-gradient(45deg, #ff00ff, #00ffff);"></div>
+                                </div>
+                                <span>Custom</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Colors -->
+                    <div class="control-group">
+                        <h3>Status Colors</h3>
+                        <div class="control-row">
+                            <label for="successColor">Success Color</label>
+                            <input type="color" id="successColor" name="successColor" value="#28a745">
+                            <input type="text" class="color-input" placeholder="#28a745">
+                        </div>
+                        <div class="control-row">
+                            <label for="warningColor">Warning Color</label>
+                            <input type="color" id="warningColor" name="warningColor" value="#ffc107">
+                            <input type="text" class="color-input" placeholder="#ffc107">
+                        </div>
+                        <div class="control-row">
+                            <label for="dangerColor">Danger Color</label>
+                            <input type="color" id="dangerColor" name="dangerColor" value="#dc3545">
+                            <input type="text" class="color-input" placeholder="#dc3545">
+                        </div>
+                        <div class="control-row">
+                            <label for="infoColor">Info Color</label>
+                            <input type="color" id="infoColor" name="infoColor" value="#17a2b8">
+                            <input type="text" class="color-input" placeholder="#17a2b8">
+                        </div>
+                    </div>
+
+                    <!-- Border Colors -->
+                    <div class="control-group">
+                        <h3>Border Colors</h3>
+                        <div class="control-row">
+                            <label for="borderLight">Light Border</label>
+                            <input type="color" id="borderLight" name="borderLight" value="#e9ecef">
+                            <input type="text" class="color-input" placeholder="#e9ecef">
+                        </div>
+                        <div class="control-row">
+                            <label for="borderMedium">Medium Border</label>
+                            <input type="color" id="borderMedium" name="borderMedium" value="#dee2e6">
+                            <input type="text" class="color-input" placeholder="#dee2e6">
+                        </div>
+                        <div class="control-row">
+                            <label for="borderDark">Dark Border</label>
+                            <input type="color" id="borderDark" name="borderDark" value="#adb5bd">
+                            <input type="text" class="color-input" placeholder="#adb5bd">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Animations Section -->
+            <section id="animations-section" class="style-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-magic"></i> Animations & Effects</h2>
+                    <p>Configure animations, transitions, and interactive effects</p>
+                </div>
+
+                <div class="control-grid">
+                    <!-- Transition Settings -->
+                    <div class="control-group">
+                        <h3>Transition Settings</h3>
+                        <div class="control-row">
+                            <label for="transitionDuration">Transition Duration</label>
+                            <input type="range" id="transitionDuration" name="transitionDuration" min="100" max="1000" value="300" step="50">
+                            <span class="range-value">300ms</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="transitionEasing">Transition Easing</label>
+                            <select id="transitionEasing" name="transitionEasing">
+                                <option value="ease">Ease</option>
+                                <option value="ease-in">Ease In</option>
+                                <option value="ease-out">Ease Out</option>
+                                <option value="ease-in-out" selected>Ease In Out</option>
+                                <option value="linear">Linear</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Hover Effects -->
+                    <div class="control-group">
+                        <h3>Hover Effects</h3>
+                        <div class="control-row">
+                            <label for="cardHoverScale">Card Hover Scale</label>
+                            <input type="range" id="cardHoverScale" name="cardHoverScale" min="1" max="1.1" value="1.02" step="0.01">
+                            <span class="range-value">1.02</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="buttonHoverScale">Button Hover Scale</label>
+                            <input type="range" id="buttonHoverScale" name="buttonHoverScale" min="1" max="1.2" value="1.05" step="0.01">
+                            <span class="range-value">1.05</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="hoverShadow">Hover Shadow Intensity</label>
+                            <input type="range" id="hoverShadow" name="hoverShadow" min="0" max="20" value="10" step="1">
+                            <span class="range-value">10</span>
+                        </div>
+                    </div>
+
+                    <!-- Loading Animations -->
+                    <div class="control-group">
+                        <h3>Loading Animations</h3>
+                        <div class="control-row">
+                            <label for="loadingStyle">Loading Style</label>
+                            <select id="loadingStyle" name="loadingStyle">
+                                <option value="spinner">Spinner</option>
+                                <option value="dots">Dots</option>
+                                <option value="bars">Bars</option>
+                                <option value="pulse">Pulse</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <label for="loadingSpeed">Loading Speed</label>
+                            <input type="range" id="loadingSpeed" name="loadingSpeed" min="0.5" max="3" value="1" step="0.1">
+                            <span class="range-value">1x</span>
+                        </div>
+                    </div>
+
+                    <!-- Page Transitions -->
+                    <div class="control-group">
+                        <h3>Page Transitions</h3>
+                        <div class="control-row">
+                            <label for="pageTransition">Page Transition</label>
+                            <select id="pageTransition" name="pageTransition">
+                                <option value="none">None</option>
+                                <option value="fade">Fade</option>
+                                <option value="slide">Slide</option>
+                                <option value="zoom">Zoom</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <label for="modalAnimation">Modal Animation</label>
+                            <select id="modalAnimation" name="modalAnimation">
+                                <option value="fadeIn">Fade In</option>
+                                <option value="slideDown">Slide Down</option>
+                                <option value="zoomIn">Zoom In</option>
+                                <option value="bounceIn">Bounce In</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Advanced Section -->
+            <section id="advanced-section" class="style-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cogs"></i> Advanced Options</h2>
+                    <p>Advanced styling options and custom CSS</p>
+                </div>
+
+                <div class="control-grid">
+                    <!-- Custom CSS -->
+                    <div class="control-group full-width">
+                        <h3>Custom CSS</h3>
+                        <div class="css-editor">
+                            <textarea id="customCSS" name="customCSS" placeholder="/* Enter your custom CSS here */
+.custom-element {
+    /* Your styles */
+}"></textarea>
+                            <div class="css-actions">
+                                <button class="css-btn" id="formatCSS">
+                                    <i class="fas fa-code"></i>
+                                    Format CSS
+                                </button>
+                                <button class="css-btn" id="validateCSS">
+                                    <i class="fas fa-check-circle"></i>
+                                    Validate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Responsive Settings -->
+                    <div class="control-group">
+                        <h3>Responsive Settings</h3>
+                        <div class="control-row">
+                            <label for="mobileBreakpoint">Mobile Breakpoint</label>
+                            <input type="range" id="mobileBreakpoint" name="mobileBreakpoint" min="320" max="768" value="576" step="8">
+                            <span class="range-value">576px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="tabletBreakpoint">Tablet Breakpoint</label>
+                            <input type="range" id="tabletBreakpoint" name="tabletBreakpoint" min="576" max="1024" value="768" step="8">
+                            <span class="range-value">768px</span>
+                        </div>
+                        <div class="control-row">
+                            <label for="desktopBreakpoint">Desktop Breakpoint</label>
+                            <input type="range" id="desktopBreakpoint" name="desktopBreakpoint" min="768" max="1400" value="992" step="8">
+                            <span class="range-value">992px</span>
+                        </div>
+                    </div>
+
+                    <!-- Performance -->
+                    <div class="control-group">
+                        <h3>Performance</h3>
+                        <div class="control-row">
+                            <label for="enableTransitions">Enable Transitions</label>
+                            <input type="checkbox" id="enableTransitions" name="enableTransitions" checked>
+                        </div>
+                        <div class="control-row">
+                            <label for="enableAnimations">Enable Animations</label>
+                            <input type="checkbox" id="enableAnimations" name="enableAnimations" checked>
+                        </div>
+                        <div class="control-row">
+                            <label for="enableShadows">Enable Shadows</label>
+                            <input type="checkbox" id="enableShadows" name="enableShadows" checked>
+                        </div>
+                    </div>
+
+                    <!-- Accessibility -->
+                    <div class="control-group">
+                        <h3>Accessibility</h3>
+                        <div class="control-row">
+                            <label for="highContrast">High Contrast Mode</label>
+                            <input type="checkbox" id="highContrast" name="highContrast">
+                        </div>
+                        <div class="control-row">
+                            <label for="reducedMotion">Reduced Motion</label>
+                            <input type="checkbox" id="reducedMotion" name="reducedMotion">
+                        </div>
+                        <div class="control-row">
+                            <label for="focusIndicators">Enhanced Focus Indicators</label>
+                            <input type="checkbox" id="focusIndicators" name="focusIndicators">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Live Preview Panel -->
+        <aside class="preview-panel" id="previewPanel">
+            <div class="preview-header">
+                <h3><i class="fas fa-eye"></i> Live Preview</h3>
+                <button class="preview-close" id="closePreview">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="preview-controls">
+                <button class="preview-btn active" data-device="desktop">
+                    <i class="fas fa-desktop"></i>
+                    Desktop
+                </button>
+                <button class="preview-btn" data-device="tablet">
+                    <i class="fas fa-tablet-alt"></i>
+                    Tablet
+                </button>
+                <button class="preview-btn" data-device="mobile">
+                    <i class="fas fa-mobile-alt"></i>
+                    Mobile
+                </button>
+            </div>
+            <div class="preview-content">
+                <iframe id="previewFrame" src="index.html"></iframe>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modal for Reset Confirmation -->
+    <div class="modal-overlay" id="resetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reset Styles</h3>
+                <button class="modal-close" id="closeResetModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reset all styles to their original values? This action cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelReset">Cancel</button>
+                <button class="btn btn-danger" id="confirmReset">Reset Styles</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Export -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Styles</h3>
+                <button class="modal-close" id="closeExportModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <label>
+                        <input type="checkbox" checked> CSS Variables
+                    </label>
+                    <label>
+                        <input type="checkbox" checked> Component Styles
+                    </label>
+                    <label>
+                        <input type="checkbox" checked> Custom CSS
+                    </label>
+                </div>
+                <textarea id="exportCode" readonly></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelExport">Close</button>
+                <button class="btn btn-primary" id="copyExport">Copy to Clipboard</button>
+                <button class="btn btn-success" id="downloadExport">Download CSS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File input for import -->
+    <input type="file" id="importFile" accept=".css,.json" style="display: none;">
+
+    <!-- Success/Error Messages -->
+    <div class="message-container" id="messageContainer"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="styles.js"></script>
+</body>
+</html>
