@@ -1,97 +1,1571 @@
-// Mafia Gaming Platform - Admin Dashboard JavaScript
+// Enhanced Gaming Platform Admin JavaScript
 // Supabase Configuration
 const SUPABASE_URL = 'https://spurpwnaeacgwojfpaem.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdXJwd25hZWFjZ3dvamZwYWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMjU2MDYsImV4cCI6MjA3MzkwMTYwNn0.VTKl3ZU6xVKcn3Ry1XTtY-Fpvm0cVqZiQcloJc33O-Y';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdXJwd25hZWFjZ3dvamZwYWVtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODMyNTYwNiwiZXhwIjoyMDczOTAxNjA2fQ.qh776GiajyHVQECbhBAYLrQASVBx21K7dzAvsiL8Fy8';
-
-// Initialize Supabase client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Global variables
-let currentAdmin = null;
-let currentPage = 'dashboard';
-let allUsers = [];
-let allProducts = [];
-let allVouchers = [];
-let allOrders = [];
-let allPayments = [];
-let allNews = [];
-let allSocial = [];
-let aboutInfo = null;
-let statsData = {};
-let userChart = null;
+// Global Variables
+let currentOrderId = null;
+let productImages = [];
+let newsImages = [];
+let currentVoucherProductId = null;
 
 // DOM Elements
-const elements = {
-    loadingOverlay: document.getElementById('loadingOverlay'),
-    messagePopup: document.getElementById('messagePopup'),
-    adminLogin: document.getElementById('adminLogin'),
-    adminDashboard: document.getElementById('adminDashboard'),
-    adminPin: document.getElementById('adminPin'),
-    adminLoginBtn: document.getElementById('adminLoginBtn'),
-    adminLogoutBtn: document.getElementById('adminLogoutBtn'),
-    
-    // Modal elements
-    adminModal: document.getElementById('adminModal'),
-    userModal: document.getElementById('userModal'),
-    orderModal: document.getElementById('orderModal'),
-    modalTitle: document.getElementById('modalTitle'),
-    modalBody: document.getElementById('modalBody'),
-    userModalBody: document.getElementById('userModalBody'),
-    orderModalBody: document.getElementById('orderModalBody'),
-    
-    // Page elements
-    dashboardPage: document.getElementById('dashboardPage'),
-    usersPage: document.getElementById('usersPage'),
-    productsPage: document.getElementById('productsPage'),
-    ordersPage: document.getElementById('ordersPage'),
-    paymentsPage: document.getElementById('paymentsPage'),
-    newsPage: document.getElementById('newsPage'),
-    socialPage: document.getElementById('socialPage'),
-    aboutPage: document.getElementById('aboutPage')
-};
+const loader = document.getElementById('loader');
+const notificationContainer = document.getElementById('notificationContainer');
+
+// Initialize Application
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAdmin();
+    setupEventListeners();
+    loadInitialData();
+});
+
+// Application Initialization
+async function initializeAdmin() {
+    try {
+        console.log('Initializing admin panel...');
+
+        // Load all initial data
+        await Promise.all([
+            loadAdminStats(),
+            loadProducts(),
+            loadOrders(),
+            loadNews(),
+            loadPageIcons(),
+            loadWebsiteSettings(),
+            loadPaymentSettings()
+        ]);
+
+        console.log('Admin panel initialized successfully');
+    } catch (error) {
+        console.error('Error initializing admin:', error);
+        showNotification('Error initializing admin panel', 'error');
+    }
+}
+
+// Event Listeners Setup
+function setupEventListeners() {
+    // Tab switching
+    setupTabListeners();
+
+    // Modal listeners
+    setupModalListeners();
+
+    // Form listeners
+    setupFormListeners();
+
+    // Filter listeners
+    setupFilterListeners();
+
+    // Real-time updates
+    startRealTimeUpdates();
+}
+
+function setupTabListeners() {
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            switchTab(tabName);
+        });
+    });
+}
+
+function setupModalListeners() {
+    // Modal close functionality
+    document.querySelectorAll('.modal-close, .modal-backdrop').forEach(element => {
+        element.addEventListener('click', function(e) {
+            const modal = e.target.closest('.modal');
+            if (modal) {
+                closeModal(modal.id);
+            }
+        });
+    });
+
+    // Prevent modal close when clicking modal content
+    document.querySelectorAll('.modal-content').forEach(content => {
+        content.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+}
+
+function setupFormListeners() {
+    // Product form
+    const productForm = document.getElementById('productForm');
+    productForm?.addEventListener('submit', handleProductSubmit);
+
+    // Voucher menu form
+    const voucherMenuForm = document.getElementById('voucherMenuForm');
+    voucherMenuForm?.addEventListener('submit', handleVoucherMenuSubmit);
+
+    // News form
+    const newsForm = document.getElementById('newsForm');
+    newsForm?.addEventListener('submit', handleNewsSubmit);
+
+    // Page icon form
+    const pageIconForm = document.getElementById('pageIconForm');
+    pageIconForm?.addEventListener('submit', handlePageIconSubmit);
+}
+
+function setupFilterListeners() {
+    // Product filters
+    document.getElementById('productCategoryFilter')?.addEventListener('change', filterProducts);
+    document.getElementById('productStatusFilter')?.addEventListener('change', filterProducts);
+    document.getElementById('productSearchInput')?.addEventListener('input', filterProducts);
+
+    // Order filters
+    document.getElementById('orderStatusFilter')?.addEventListener('change', filterOrders);
+    document.getElementById('orderDateFilter')?.addEventListener('change', filterOrders);
+    document.getElementById('orderSearchInput')?.addEventListener('input', filterOrders);
+
+    // Voucher product filter
+    document.getElementById('voucherProductFilter')?.addEventListener('change', function(e) {
+        currentVoucherProductId = e.target.value;
+        if (currentVoucherProductId) {
+            loadVoucherMenus(currentVoucherProductId);
+        } else {
+            document.getElementById('voucherMenusGrid').innerHTML = '<p class="no-data">Select a product to view voucher menus</p>';
+        }
+    });
+}
+
+// Tab Management
+function switchTab(tabName) {
+    // Update active tab
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+    // Update active content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabName}Tab`).classList.add('active');
+
+    // Load tab-specific data if needed
+    switch(tabName) {
+        case 'products':
+            loadProducts();
+            break;
+        case 'vouchers':
+            loadProductsForVouchers();
+            break;
+        case 'orders':
+            loadOrders();
+            break;
+        case 'news':
+            loadNews();
+            break;
+        case 'icons':
+            loadPageIcons();
+            break;
+        case 'settings':
+            loadWebsiteSettings();
+            break;
+    }
+}
+
+// Data Loading Functions
+async function loadInitialData() {
+    try {
+        showLoading(true);
+
+        await Promise.all([
+            loadAdminStats(),
+            loadProducts()
+        ]);
+
+    } catch (error) {
+        console.error('Error loading initial data:', error);
+        showNotification('Error loading data', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function loadAdminStats() {
+    try {
+        // Load order stats
+        const { data: orders, error: orderError } = await supabase
+            .from('orders')
+            .select('status, total_price');
+
+        if (orderError) throw orderError;
+
+        // Load product count
+        const { data: products, error: productError } = await supabase
+            .from('products')
+            .select('id');
+
+        if (productError) throw productError;
+
+        // Calculate stats
+        const totalOrders = orders.length;
+        const totalProducts = products.length;
+        const totalRevenue = orders.reduce((sum, order) => sum + (order.total_price || 0), 0);
+
+        const pendingCount = orders.filter(o => o.status === 'pending').length;
+        const approvedCount = orders.filter(o => o.status === 'approved').length;
+        const rejectedCount = orders.filter(o => o.status === 'rejected').length;
+
+        // Update UI
+        document.getElementById('totalOrders').textContent = totalOrders;
+        document.getElementById('totalProducts').textContent = totalProducts;
+        document.getElementById('totalRevenue').textContent = formatPrice(totalRevenue);
+
+        document.getElementById('pendingCount').textContent = pendingCount;
+        document.getElementById('approvedCount').textContent = approvedCount;
+        document.getElementById('rejectedCount').textContent = rejectedCount;
+
+    } catch (error) {
+        console.error('Error loading admin stats:', error);
+    }
+}
+
+async function loadProducts() {
+    try {
+        const { data: products, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        displayProducts(products);
+    } catch (error) {
+        console.error('Error loading products:', error);
+        showNotification('Error loading products', 'error');
+    }
+}
+
+async function loadProductsForVouchers() {
+    try {
+        const { data: products, error } = await supabase
+            .from('products')
+            .select('id, name, category')
+            .eq('status', 'active')
+            .order('name');
+
+        if (error) throw error;
+
+        // Populate product filter dropdown
+        const productFilter = document.getElementById('voucherProductFilter');
+        const voucherMenuProduct = document.getElementById('voucherMenuProduct');
+
+        // Clear existing options
+        productFilter.innerHTML = '<option value="">Select Product</option>';
+        voucherMenuProduct.innerHTML = '<option value="">Select Product</option>';
+
+        products.forEach(product => {
+            const option1 = document.createElement('option');
+            option1.value = product.id;
+            option1.textContent = `${product.name} (${product.category})`;
+            productFilter.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = product.id;
+            option2.textContent = `${product.name} (${product.category})`;
+            voucherMenuProduct.appendChild(option2);
+        });
+
+    } catch (error) {
+        console.error('Error loading products for vouchers:', error);
+        showNotification('Error loading products', 'error');
+    }
+}
+
+async function loadVoucherMenus(productId) {
+    try {
+        const { data: menus, error } = await supabase
+            .from('voucher_menus')
+            .select(`
+                *,
+                products (name, category)
+            `)
+            .eq('product_id', productId)
+            .order('display_order');
+
+        if (error) throw error;
+
+        displayVoucherMenus(menus);
+    } catch (error) {
+        console.error('Error loading voucher menus:', error);
+        showNotification('Error loading voucher menus', 'error');
+    }
+}
+
+async function loadOrders() {
+    try {
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                products (name),
+                voucher_menus (name)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) throw error;
+
+        displayOrders(orders);
+        await loadAdminStats(); // Refresh stats
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        showNotification('Error loading orders', 'error');
+    }
+}
+
+async function loadNews() {
+    try {
+        const { data: news, error } = await supabase
+            .from('news')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        displayNews(news);
+    } catch (error) {
+        console.error('Error loading news:', error);
+        showNotification('Error loading news', 'error');
+    }
+}
+
+async function loadPageIcons() {
+    try {
+        const { data: icons, error } = await supabase
+            .from('page_icons')
+            .select('*')
+            .order('display_order');
+
+        if (error) throw error;
+
+        displayPageIcons(icons);
+    } catch (error) {
+        console.error('Error loading page icons:', error);
+        showNotification('Error loading page icons', 'error');
+    }
+}
+
+async function loadWebsiteSettings() {
+    try {
+        // Load website logo
+        const { data: logoSettings, error: logoError } = await supabase
+            .from('website_settings')
+            .select('*')
+            .eq('key', 'site_logo')
+            .single();
+
+        if (logoSettings && logoSettings.logo_url) {
+            document.getElementById('currentLogo').src = logoSettings.logo_url;
+        }
+
+        // Load database stats
+        await loadDatabaseStats();
+
+    } catch (error) {
+        console.log('Using default settings');
+    }
+}
+
+async function loadPaymentSettings() {
+    try {
+        const { data: settings, error } = await supabase
+            .from('website_settings')
+            .select('*')
+            .in('key', ['kbz_pay', 'wave_pay', 'aya_pay']);
+
+        if (error) throw error;
+
+        settings.forEach(setting => {
+            const inputId = setting.key.replace('_', '') + 'Number';
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = setting.value || '';
+            }
+        });
+
+    } catch (error) {
+        console.log('Using default payment settings');
+    }
+}
+
+async function loadDatabaseStats() {
+    try {
+        const statsContainer = document.getElementById('databaseStats');
+        statsContainer.innerHTML = '<p>Loading database statistics...</p>';
+
+        // Get table row counts
+        const tables = ['products', 'orders', 'news', 'page_icons', 'voucher_menus'];
+        const stats = {};
+
+        for (const table of tables) {
+            const { count, error } = await supabase
+                .from(table)
+                .select('*', { count: 'exact', head: true });
+
+            if (!error) {
+                stats[table] = count;
+            }
+        }
+
+        // Display stats
+        let statsHTML = '<div class="db-stats-grid">';
+        for (const [table, count] of Object.entries(stats)) {
+            statsHTML += `
+                <div class="db-stat-item">
+                    <div class="stat-number">${count}</div>
+                    <div class="stat-label">${table.replace('_', ' ').toUpperCase()}</div>
+                </div>
+            `;
+        }
+        statsHTML += '</div>';
+
+        statsContainer.innerHTML = statsHTML;
+
+    } catch (error) {
+        console.error('Error loading database stats:', error);
+        document.getElementById('databaseStats').innerHTML = '<p class="error">Error loading statistics</p>';
+    }
+}
+
+// Display Functions
+function displayProducts(products) {
+    const grid = document.getElementById('productsGrid');
+
+    if (products.length === 0) {
+        grid.innerHTML = '<div class="no-data">No products found</div>';
+        return;
+    }
+
+    grid.innerHTML = products.map(product => createProductCard(product)).join('');
+}
+
+function createProductCard(product) {
+    const images = product.images || [];
+    const primaryImage = images.length > 0 ? images[0] : '/assets/images/placeholder.png';
+
+    return `
+        <div class="admin-product-card" data-product-id="${product.id}">
+            <div class="product-image">
+                <img src="${primaryImage}" alt="${product.name}">
+                ${images.length > 1 ? `<div class="image-count">+${images.length - 1}</div>` : ''}
+            </div>
+            <div class="product-info">
+                <h3>${product.name}</h3>
+                <p class="product-category">${product.category}</p>
+                <p class="product-price">${formatPrice(product.price)} MMK</p>
+                <div class="product-status status-${product.status}">${product.status}</div>
+            </div>
+            <div class="product-actions">
+                <button class="btn-sm btn-secondary" onclick="editProduct('${product.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-sm btn-danger" onclick="deleteProduct('${product.id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function displayVoucherMenus(menus) {
+    const grid = document.getElementById('voucherMenusGrid');
+
+    if (menus.length === 0) {
+        grid.innerHTML = '<div class="no-data">No voucher menus found for this product</div>';
+        return;
+    }
+
+    grid.innerHTML = menus.map(menu => createVoucherMenuCard(menu)).join('');
+}
+
+function createVoucherMenuCard(menu) {
+    return `
+        <div class="voucher-menu-card" data-menu-id="${menu.id}">
+            <div class="voucher-icon">
+                <img src="${menu.icon_url || '/assets/icons/voucher-default.png'}" alt="${menu.name}">
+            </div>
+            <div class="voucher-info">
+                <h4>${menu.name}</h4>
+                <p class="voucher-price">${formatPrice(menu.price)} MMK</p>
+                <p class="voucher-order">Order: ${menu.display_order}</p>
+                <div class="voucher-status ${menu.is_active ? 'active' : 'inactive'}">
+                    ${menu.is_active ? 'Active' : 'Inactive'}
+                </div>
+            </div>
+            <div class="voucher-actions">
+                <button class="btn-sm btn-secondary" onclick="editVoucherMenu('${menu.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-sm btn-danger" onclick="deleteVoucherMenu('${menu.id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function displayOrders(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="no-data">No orders found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = orders.map(order => createOrderRow(order)).join('');
+}
+
+function createOrderRow(order) {
+    const productName = order.products ? order.products.name : 'Unknown';
+    const voucherName = order.voucher_menus ? order.voucher_menus.name : '';
+
+    return `
+        <tr data-order-id="${order.id}">
+            <td class="order-id">${order.order_id}</td>
+            <td>
+                ${productName}
+                ${voucherName ? `<br><small>${voucherName}</small>` : ''}
+            </td>
+            <td>${order.game_id}</td>
+            <td class="order-amount">${formatPrice(order.total_price)} MMK</td>
+            <td class="payment-method">${order.payment_method.toUpperCase()}</td>
+            <td>
+                <span class="status-badge status-${order.status}">
+                    ${order.status.toUpperCase()}
+                </span>
+            </td>
+            <td class="order-date">${formatDate(order.created_at)}</td>
+            <td class="order-actions">
+                <button class="btn-sm btn-primary" onclick="viewOrder('${order.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+}
+
+function displayNews(newsItems) {
+    const grid = document.getElementById('newsGrid');
+
+    if (newsItems.length === 0) {
+        grid.innerHTML = '<div class="no-data">No news found</div>';
+        return;
+    }
+
+    grid.innerHTML = newsItems.map(news => createNewsCard(news)).join('');
+}
+
+function createNewsCard(news) {
+    const images = news.images || [];
+    const primaryImage = images.length > 0 ? images[0] : '/assets/images/placeholder.png';
+
+    return `
+        <div class="admin-news-card" data-news-id="${news.id}">
+            <div class="news-image">
+                <img src="${primaryImage}" alt="${news.title}">
+                ${images.length > 1 ? `<div class="image-count">+${images.length - 1}</div>` : ''}
+            </div>
+            <div class="news-content">
+                <h3>${news.title}</h3>
+                <p class="news-excerpt">${truncateText(news.content, 100)}</p>
+                <div class="news-meta">
+                    <span class="news-date">${formatDate(news.created_at)}</span>
+                    <span class="news-status status-${news.status}">${news.status}</span>
+                </div>
+            </div>
+            <div class="news-actions">
+                <button class="btn-sm btn-secondary" onclick="editNews('${news.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-sm btn-danger" onclick="deleteNews('${news.id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function displayPageIcons(icons) {
+    const grid = document.getElementById('pageIconsGrid');
+
+    if (icons.length === 0) {
+        grid.innerHTML = '<div class="no-data">No page icons found</div>';
+        return;
+    }
+
+    grid.innerHTML = icons.map(icon => createPageIconCard(icon)).join('');
+}
+
+function createPageIconCard(icon) {
+    return `
+        <div class="page-icon-card" data-icon-id="${icon.id}">
+            <div class="icon-preview">
+                <img src="${icon.icon_url || '/assets/icons/default.png'}" alt="${icon.display_name}">
+            </div>
+            <div class="icon-info">
+                <h4>${icon.display_name}</h4>
+                <p class="icon-page-name">${icon.page_name}</p>
+                <p class="icon-order">Order: ${icon.display_order}</p>
+                <div class="icon-status ${icon.is_active ? 'active' : 'inactive'}">
+                    ${icon.is_active ? 'Active' : 'Inactive'}
+                </div>
+            </div>
+            <div class="icon-actions">
+                <button class="btn-sm btn-secondary" onclick="editPageIcon('${icon.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-sm btn-danger" onclick="deletePageIcon('${icon.id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Modal Functions
+function showAddProductModal() {
+    resetProductForm();
+    document.getElementById('productModalTitle').textContent = 'Add Product';
+    showModal('productModal');
+}
+
+function showAddVoucherMenuModal() {
+    resetVoucherMenuForm();
+    document.getElementById('voucherMenuModalTitle').textContent = 'Add Voucher Menu';
+    loadProductsForVouchers(); // Ensure products are loaded
+    showModal('voucherMenuModal');
+}
+
+function showAddNewsModal() {
+    resetNewsForm();
+    document.getElementById('newsModalTitle').textContent = 'Add News';
+    showModal('newsModal');
+}
+
+function showAddPageIconModal() {
+    resetPageIconForm();
+    document.getElementById('pageIconModalTitle').textContent = 'Add Page Icon';
+    showModal('pageIconModal');
+}
+
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.add('show');
+    document.body.classList.add('modal-open');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('show');
+    document.body.classList.remove('modal-open');
+}
+
+// Form Handlers
+async function handleProductSubmit(event) {
+    event.preventDefault();
+
+    try {
+        showLoading(true);
+
+        const formData = new FormData(event.target);
+        const productData = {
+            name: formData.get('productName'),
+            description: formData.get('productDescription'),
+            category: formData.get('productCategory'),
+            price: parseInt(formData.get('productPrice')),
+            status: formData.get('productStatus'),
+            images: productImages
+        };
+
+        const productId = document.getElementById('productId').value;
+
+        if (productId) {
+            // Update existing product
+            const { error } = await supabase
+                .from('products')
+                .update(productData)
+                .eq('id', productId);
+
+            if (error) throw error;
+            showNotification('Product updated successfully', 'success');
+        } else {
+            // Create new product
+            const { error } = await supabase
+                .from('products')
+                .insert([productData]);
+
+            if (error) throw error;
+            showNotification('Product created successfully', 'success');
+        }
+
+        closeModal('productModal');
+        loadProducts();
+
+    } catch (error) {
+        console.error('Error saving product:', error);
+        showNotification('Error saving product', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function handleVoucherMenuSubmit(event) {
+    event.preventDefault();
+
+    try {
+        showLoading(true);
+
+        const formData = new FormData(event.target);
+        const voucherData = {
+            product_id: formData.get('voucherMenuProduct'),
+            name: formData.get('voucherMenuName'),
+            price: parseInt(formData.get('voucherMenuPrice')),
+            display_order: parseInt(formData.get('voucherMenuOrder')),
+            is_active: formData.get('voucherMenuActive') === 'true'
+        };
+
+        // Handle icon upload if present
+        const iconFile = document.getElementById('voucherMenuIcon').files[0];
+        if (iconFile) {
+            const iconUrl = await uploadFile(iconFile, 'voucher-icons');
+            voucherData.icon_url = iconUrl;
+        }
+
+        const voucherMenuId = document.getElementById('voucherMenuId').value;
+
+        if (voucherMenuId) {
+            // Update existing voucher menu
+            const { error } = await supabase
+                .from('voucher_menus')
+                .update(voucherData)
+                .eq('id', voucherMenuId);
+
+            if (error) throw error;
+            showNotification('Voucher menu updated successfully', 'success');
+        } else {
+            // Create new voucher menu
+            const { error } = await supabase
+                .from('voucher_menus')
+                .insert([voucherData]);
+
+            if (error) throw error;
+            showNotification('Voucher menu created successfully', 'success');
+        }
+
+        closeModal('voucherMenuModal');
+        if (currentVoucherProductId) {
+            loadVoucherMenus(currentVoucherProductId);
+        }
+
+    } catch (error) {
+        console.error('Error saving voucher menu:', error);
+        showNotification('Error saving voucher menu', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function handleNewsSubmit(event) {
+    event.preventDefault();
+
+    try {
+        showLoading(true);
+
+        const formData = new FormData(event.target);
+        const newsData = {
+            title: formData.get('newsTitle'),
+            content: formData.get('newsContent'),
+            status: formData.get('newsStatus'),
+            images: newsImages
+        };
+
+        const newsId = document.getElementById('newsId').value;
+
+        if (newsId) {
+            // Update existing news
+            const { error } = await supabase
+                .from('news')
+                .update(newsData)
+                .eq('id', newsId);
+
+            if (error) throw error;
+            showNotification('News updated successfully', 'success');
+        } else {
+            // Create new news
+            const { error } = await supabase
+                .from('news')
+                .insert([newsData]);
+
+            if (error) throw error;
+            showNotification('News created successfully', 'success');
+        }
+
+        closeModal('newsModal');
+        loadNews();
+
+    } catch (error) {
+        console.error('Error saving news:', error);
+        showNotification('Error saving news', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function handlePageIconSubmit(event) {
+    event.preventDefault();
+
+    try {
+        showLoading(true);
+
+        const formData = new FormData(event.target);
+        const iconData = {
+            page_name: formData.get('pageIconName'),
+            display_name: formData.get('pageIconDisplayName'),
+            display_order: parseInt(formData.get('pageIconOrder')),
+            is_active: formData.get('pageIconActive') === 'true'
+        };
+
+        // Handle icon upload if present
+        const iconFile = document.getElementById('pageIconFile').files[0];
+        if (iconFile) {
+            const iconUrl = await uploadFile(iconFile, 'page-icons');
+            iconData.icon_url = iconUrl;
+        }
+
+        const pageIconId = document.getElementById('pageIconId').value;
+
+        if (pageIconId) {
+            // Update existing page icon
+            const { error } = await supabase
+                .from('page_icons')
+                .update(iconData)
+                .eq('id', pageIconId);
+
+            if (error) throw error;
+            showNotification('Page icon updated successfully', 'success');
+        } else {
+            // Create new page icon
+            const { error } = await supabase
+                .from('page_icons')
+                .insert([iconData]);
+
+            if (error) throw error;
+            showNotification('Page icon created successfully', 'success');
+        }
+
+        closeModal('pageIconModal');
+        loadPageIcons();
+
+    } catch (error) {
+        console.error('Error saving page icon:', error);
+        showNotification('Error saving page icon', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// File Upload Functions
+async function uploadFile(file, folder) {
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${folder}/${fileName}`;
+
+        const { data, error } = await supabase.storage
+            .from('gaming-platform')
+            .upload(filePath, file);
+
+        if (error) throw error;
+
+        const { data: publicURL } = supabase.storage
+            .from('gaming-platform')
+            .getPublicUrl(filePath);
+
+        return publicURL.publicUrl;
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        throw error;
+    }
+}
+
+async function uploadMultipleFiles(files, folder) {
+    const urls = [];
+
+    for (const file of files) {
+        try {
+            const url = await uploadFile(file, folder);
+            urls.push(url);
+        } catch (error) {
+            console.error('Error uploading file:', file.name, error);
+        }
+    }
+
+    return urls;
+}
+
+// Image Preview Functions
+function triggerImageUpload() {
+    document.getElementById('productImages').click();
+}
+
+async function previewProductImages(event) {
+    const files = Array.from(event.target.files);
+    const container = document.getElementById('imagePreviewsContainer');
+
+    if (files.length === 0) return;
+
+    try {
+        showLoading(true);
+
+        // Upload files
+        const imageUrls = await uploadMultipleFiles(files, 'product-images');
+        productImages = [...productImages, ...imageUrls];
+
+        // Display previews
+        displayImagePreviews(container, productImages, 'product');
+
+    } catch (error) {
+        console.error('Error handling product images:', error);
+        showNotification('Error uploading images', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function triggerNewsImageUpload() {
+    document.getElementById('newsImages').click();
+}
+
+async function previewNewsImages(event) {
+    const files = Array.from(event.target.files);
+    const container = document.getElementById('newsImagePreviewsContainer');
+
+    if (files.length === 0) return;
+
+    try {
+        showLoading(true);
+
+        // Upload files
+        const imageUrls = await uploadMultipleFiles(files, 'news-images');
+        newsImages = [...newsImages, ...imageUrls];
+
+        // Display previews
+        displayImagePreviews(container, newsImages, 'news');
+
+    } catch (error) {
+        console.error('Error handling news images:', error);
+        showNotification('Error uploading images', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function displayImagePreviews(container, images, type) {
+    container.innerHTML = images.map((url, index) => `
+        <div class="image-preview">
+            <img src="${url}" alt="Preview ${index + 1}">
+            <button type="button" class="remove-image" onclick="removeImage('${type}', ${index})">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function removeImage(type, index) {
+    if (type === 'product') {
+        productImages.splice(index, 1);
+        displayImagePreviews(document.getElementById('imagePreviewsContainer'), productImages, 'product');
+    } else if (type === 'news') {
+        newsImages.splice(index, 1);
+        displayImagePreviews(document.getElementById('newsImagePreviewsContainer'), newsImages, 'news');
+    }
+}
+
+async function previewVoucherIcon(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById('voucherIconImg');
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        preview.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+async function previewPageIcon(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById('pageIconImg');
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        preview.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+async function previewLogo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById('currentLogo');
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        preview.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+// Edit Functions
+async function editProduct(productId) {
+    try {
+        const { data: product, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', productId)
+            .single();
+
+        if (error) throw error;
+
+        // Populate form
+        document.getElementById('productId').value = product.id;
+        document.getElementById('productName').value = product.name;
+        document.getElementById('productDescription').value = product.description || '';
+        document.getElementById('productCategory').value = product.category;
+        document.getElementById('productPrice').value = product.price;
+        document.getElementById('productStatus').value = product.status;
+
+        // Set existing images
+        productImages = product.images || [];
+        displayImagePreviews(document.getElementById('imagePreviewsContainer'), productImages, 'product');
+
+        document.getElementById('productModalTitle').textContent = 'Edit Product';
+        showModal('productModal');
+
+    } catch (error) {
+        console.error('Error loading product:', error);
+        showNotification('Error loading product', 'error');
+    }
+}
+
+async function editVoucherMenu(menuId) {
+    try {
+        const { data: menu, error } = await supabase
+            .from('voucher_menus')
+            .select('*')
+            .eq('id', menuId)
+            .single();
+
+        if (error) throw error;
+
+        // Populate form
+        document.getElementById('voucherMenuId').value = menu.id;
+        document.getElementById('voucherMenuProduct').value = menu.product_id;
+        document.getElementById('voucherMenuName').value = menu.name;
+        document.getElementById('voucherMenuPrice').value = menu.price;
+        document.getElementById('voucherMenuOrder').value = menu.display_order;
+        document.getElementById('voucherMenuActive').value = menu.is_active.toString();
+
+        // Set icon preview
+        if (menu.icon_url) {
+            document.getElementById('voucherIconImg').src = menu.icon_url;
+        }
+
+        document.getElementById('voucherMenuModalTitle').textContent = 'Edit Voucher Menu';
+        showModal('voucherMenuModal');
+
+    } catch (error) {
+        console.error('Error loading voucher menu:', error);
+        showNotification('Error loading voucher menu', 'error');
+    }
+}
+
+async function editNews(newsId) {
+    try {
+        const { data: news, error } = await supabase
+            .from('news')
+            .select('*')
+            .eq('id', newsId)
+            .single();
+
+        if (error) throw error;
+
+        // Populate form
+        document.getElementById('newsId').value = news.id;
+        document.getElementById('newsTitle').value = news.title;
+        document.getElementById('newsContent').value = news.content;
+        document.getElementById('newsStatus').value = news.status;
+
+        // Set existing images
+        newsImages = news.images || [];
+        displayImagePreviews(document.getElementById('newsImagePreviewsContainer'), newsImages, 'news');
+
+        document.getElementById('newsModalTitle').textContent = 'Edit News';
+        showModal('newsModal');
+
+    } catch (error) {
+        console.error('Error loading news:', error);
+        showNotification('Error loading news', 'error');
+    }
+}
+
+async function editPageIcon(iconId) {
+    try {
+        const { data: icon, error } = await supabase
+            .from('page_icons')
+            .select('*')
+            .eq('id', iconId)
+            .single();
+
+        if (error) throw error;
+
+        // Populate form
+        document.getElementById('pageIconId').value = icon.id;
+        document.getElementById('pageIconName').value = icon.page_name;
+        document.getElementById('pageIconDisplayName').value = icon.display_name;
+        document.getElementById('pageIconOrder').value = icon.display_order;
+        document.getElementById('pageIconActive').value = icon.is_active.toString();
+
+        // Set icon preview
+        if (icon.icon_url) {
+            document.getElementById('pageIconImg').src = icon.icon_url;
+        }
+
+        document.getElementById('pageIconModalTitle').textContent = 'Edit Page Icon';
+        showModal('pageIconModal');
+
+    } catch (error) {
+        console.error('Error loading page icon:', error);
+        showNotification('Error loading page icon', 'error');
+    }
+}
+
+// Delete Functions
+function deleteProduct(productId) {
+    showConfirmation(
+        'Delete Product',
+        'Are you sure you want to delete this product? This action cannot be undone.',
+        async () => {
+            try {
+                const { error } = await supabase
+                    .from('products')
+                    .delete()
+                    .eq('id', productId);
+
+                if (error) throw error;
+
+                showNotification('Product deleted successfully', 'success');
+                loadProducts();
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                showNotification('Error deleting product', 'error');
+            }
+        }
+    );
+}
+
+function deleteVoucherMenu(menuId) {
+    showConfirmation(
+        'Delete Voucher Menu',
+        'Are you sure you want to delete this voucher menu? This action cannot be undone.',
+        async () => {
+            try {
+                const { error } = await supabase
+                    .from('voucher_menus')
+                    .delete()
+                    .eq('id', menuId);
+
+                if (error) throw error;
+
+                showNotification('Voucher menu deleted successfully', 'success');
+                if (currentVoucherProductId) {
+                    loadVoucherMenus(currentVoucherProductId);
+                }
+            } catch (error) {
+                console.error('Error deleting voucher menu:', error);
+                showNotification('Error deleting voucher menu', 'error');
+            }
+        }
+    );
+}
+
+function deleteNews(newsId) {
+    showConfirmation(
+        'Delete News',
+        'Are you sure you want to delete this news item? This action cannot be undone.',
+        async () => {
+            try {
+                const { error } = await supabase
+                    .from('news')
+                    .delete()
+                    .eq('id', newsId);
+
+                if (error) throw error;
+
+                showNotification('News deleted successfully', 'success');
+                loadNews();
+            } catch (error) {
+                console.error('Error deleting news:', error);
+                showNotification('Error deleting news', 'error');
+            }
+        }
+    );
+}
+
+function deletePageIcon(iconId) {
+    showConfirmation(
+        'Delete Page Icon',
+        'Are you sure you want to delete this page icon? This action cannot be undone.',
+        async () => {
+            try {
+                const { error } = await supabase
+                    .from('page_icons')
+                    .delete()
+                    .eq('id', iconId);
+
+                if (error) throw error;
+
+                showNotification('Page icon deleted successfully', 'success');
+                loadPageIcons();
+            } catch (error) {
+                console.error('Error deleting page icon:', error);
+                showNotification('Error deleting page icon', 'error');
+            }
+        }
+    );
+}
+
+// Order Management
+async function viewOrder(orderId) {
+    try {
+        const { data: order, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                products (name, category),
+                voucher_menus (name)
+            `)
+            .eq('id', orderId)
+            .single();
+
+        if (error) throw error;
+
+        currentOrderId = orderId;
+        displayOrderDetails(order);
+        showModal('orderModal');
+
+    } catch (error) {
+        console.error('Error loading order:', error);
+        showNotification('Error loading order', 'error');
+    }
+}
+
+function displayOrderDetails(order) {
+    const container = document.getElementById('orderDetailsContent');
+
+    container.innerHTML = `
+        <div class="order-details">
+            <div class="detail-row">
+                <label>Order ID:</label>
+                <span>${order.order_id}</span>
+            </div>
+            <div class="detail-row">
+                <label>Product:</label>
+                <span>${order.products ? order.products.name : 'Unknown'}</span>
+            </div>
+            ${order.voucher_menus ? `
+                <div class="detail-row">
+                    <label>Voucher:</label>
+                    <span>${order.voucher_menus.name}</span>
+                </div>
+            ` : ''}
+            <div class="detail-row">
+                <label>Game ID:</label>
+                <span>${order.game_id}</span>
+            </div>
+            ${order.server_id ? `
+                <div class="detail-row">
+                    <label>Server ID:</label>
+                    <span>${order.server_id}</span>
+                </div>
+            ` : ''}
+            ${order.zone_id ? `
+                <div class="detail-row">
+                    <label>Zone ID:</label>
+                    <span>${order.zone_id}</span>
+                </div>
+            ` : ''}
+            ${order.telegram_link ? `
+                <div class="detail-row">
+                    <label>Telegram:</label>
+                    <span>${order.telegram_link}</span>
+                </div>
+            ` : ''}
+            <div class="detail-row">
+                <label>Amount:</label>
+                <span>${formatPrice(order.total_price)} MMK</span>
+            </div>
+            <div class="detail-row">
+                <label>Payment Method:</label>
+                <span>${order.payment_method.toUpperCase()}</span>
+            </div>
+            <div class="detail-row">
+                <label>Status:</label>
+                <span class="status-badge status-${order.status}">${order.status.toUpperCase()}</span>
+            </div>
+            <div class="detail-row">
+                <label>Created:</label>
+                <span>${formatDate(order.created_at)}</span>
+            </div>
+            ${order.admin_notes ? `
+                <div class="detail-row">
+                    <label>Previous Notes:</label>
+                    <span>${order.admin_notes}</span>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    // Set current admin notes
+    document.getElementById('adminNotes').value = order.admin_notes || '';
+}
+
+async function approveOrder() {
+    await updateOrderStatus('approved');
+}
+
+async function rejectOrder() {
+    await updateOrderStatus('rejected');
+}
+
+async function updateOrderStatus(status) {
+    try {
+        const adminNotes = document.getElementById('adminNotes').value;
+
+        const { error } = await supabase
+            .from('orders')
+            .update({
+                status: status,
+                admin_notes: adminNotes,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', currentOrderId);
+
+        if (error) throw error;
+
+        showNotification(`Order ${status} successfully`, 'success');
+        closeModal('orderModal');
+        loadOrders();
+
+    } catch (error) {
+        console.error('Error updating order:', error);
+        showNotification('Error updating order', 'error');
+    }
+}
+
+// Settings Functions
+async function updateWebsiteLogo() {
+    try {
+        const logoFile = document.getElementById('logoUpload').files[0];
+        if (!logoFile) {
+            showNotification('Please select a logo file', 'error');
+            return;
+        }
+
+        showLoading(true);
+
+        // Upload new logo
+        const logoUrl = await uploadFile(logoFile, 'website');
+
+        // Update database
+        const { error } = await supabase
+            .from('website_settings')
+            .upsert({
+                key: 'site_logo',
+                logo_url: logoUrl,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) throw error;
+
+        showNotification('Website logo updated successfully', 'success');
+
+    } catch (error) {
+        console.error('Error updating logo:', error);
+        showNotification('Error updating logo', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function updatePaymentSettings() {
+    try {
+        showLoading(true);
+
+        const settings = [
+            {
+                key: 'kbz_pay',
+                value: document.getElementById('kbzPayNumber').value
+            },
+            {
+                key: 'wave_pay',
+                value: document.getElementById('wavePayNumber').value
+            },
+            {
+                key: 'aya_pay',
+                value: document.getElementById('ayaPayNumber').value
+            }
+        ];
+
+        for (const setting of settings) {
+            const { error } = await supabase
+                .from('website_settings')
+                .upsert({
+                    ...setting,
+                    updated_at: new Date().toISOString()
+                });
+
+            if (error) throw error;
+        }
+
+        showNotification('Payment settings updated successfully', 'success');
+
+    } catch (error) {
+        console.error('Error updating payment settings:', error);
+        showNotification('Error updating payment settings', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function refreshDatabaseStats() {
+    await loadDatabaseStats();
+    showNotification('Database statistics refreshed', 'success');
+}
+
+function refreshVoucherMenus() {
+    if (currentVoucherProductId) {
+        loadVoucherMenus(currentVoucherProductId);
+        showNotification('Voucher menus refreshed', 'success');
+    } else {
+        showNotification('Please select a product first', 'error');
+    }
+}
+
+// Filter Functions
+function filterProducts() {
+    const category = document.getElementById('productCategoryFilter').value;
+    const status = document.getElementById('productStatusFilter').value;
+    const search = document.getElementById('productSearchInput').value.toLowerCase();
+
+    const products = document.querySelectorAll('.admin-product-card');
+
+    products.forEach(product => {
+        const productCategory = product.querySelector('.product-category').textContent;
+        const productStatus = product.querySelector('.product-status').textContent;
+        const productName = product.querySelector('h3').textContent.toLowerCase();
+
+        const categoryMatch = !category || productCategory === category;
+        const statusMatch = !status || productStatus === status;
+        const searchMatch = !search || productName.includes(search);
+
+        product.style.display = categoryMatch && statusMatch && searchMatch ? 'block' : 'none';
+    });
+}
+
+function filterOrders() {
+    const status = document.getElementById('orderStatusFilter').value;
+    const date = document.getElementById('orderDateFilter').value;
+    const search = document.getElementById('orderSearchInput').value.toLowerCase();
+
+    const orders = document.querySelectorAll('#ordersTableBody tr');
+
+    orders.forEach(order => {
+        if (order.querySelector('.no-data')) return;
+
+        const orderStatus = order.querySelector('.status-badge').textContent.toLowerCase();
+        const orderDate = order.querySelector('.order-date').textContent;
+        const orderId = order.querySelector('.order-id').textContent.toLowerCase();
+        const gameId = order.cells[2].textContent.toLowerCase();
+
+        const statusMatch = !status || orderStatus.includes(status);
+        const dateMatch = !date || orderDate.includes(date);
+        const searchMatch = !search || orderId.includes(search) || gameId.includes(search);
+
+        order.style.display = statusMatch && dateMatch && searchMatch ? '' : 'none';
+    });
+}
+
+// Form Reset Functions
+function resetProductForm() {
+    document.getElementById('productForm').reset();
+    document.getElementById('productId').value = '';
+    productImages = [];
+    document.getElementById('imagePreviewsContainer').innerHTML = '';
+}
+
+function resetVoucherMenuForm() {
+    document.getElementById('voucherMenuForm').reset();
+    document.getElementById('voucherMenuId').value = '';
+    document.getElementById('voucherIconImg').src = '/assets/icons/voucher-default.png';
+}
+
+function resetNewsForm() {
+    document.getElementById('newsForm').reset();
+    document.getElementById('newsId').value = '';
+    newsImages = [];
+    document.getElementById('newsImagePreviewsContainer').innerHTML = '';
+}
+
+function resetPageIconForm() {
+    document.getElementById('pageIconForm').reset();
+    document.getElementById('pageIconId').value = '';
+    document.getElementById('pageIconImg').src = '/assets/icons/default.png';
+}
+
+// Real-time Updates
+function startRealTimeUpdates() {
+    // Subscribe to order changes
+    supabase
+        .channel('orders')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'orders' }, 
+            () => {
+                loadOrders();
+                loadAdminStats();
+            }
+        )
+        .subscribe();
+
+    // Subscribe to product changes
+    supabase
+        .channel('products')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'products' }, 
+            () => {
+                loadProducts();
+                loadProductsForVouchers();
+                loadAdminStats();
+            }
+        )
+        .subscribe();
+}
 
 // Utility Functions
-function showLoading() {
-    elements.loadingOverlay.style.display = 'flex';
-}
-
-function hideLoading() {
-    elements.loadingOverlay.style.display = 'none';
-}
-
-function showMessage(message, type = 'info', duration = 5000) {
-    const popup = elements.messagePopup;
-    const messageText = popup.querySelector('.message-text');
-    const messageTimer = popup.querySelector('.message-timer');
-    const closeBtn = popup.querySelector('.message-close');
-    
-    messageText.textContent = message;
-    popup.className = `message-popup show ${type}`;
-    
-    let timeLeft = duration / 1000;
-    messageTimer.textContent = timeLeft;
-    
-    const timer = setInterval(() => {
-        timeLeft--;
-        messageTimer.textContent = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            hideMessage();
-        }
-    }, 1000);
-    
-    closeBtn.onclick = () => {
-        clearInterval(timer);
-        hideMessage();
-    };
-    
-    function hideMessage() {
-        popup.classList.remove('show');
-        setTimeout(() => {
-            popup.className = 'message-popup';
-        }, 400);
-    }
+function formatPrice(price) {
+    return new Intl.NumberFormat('en-US').format(price);
 }
 
 function formatDate(dateString) {
@@ -104,1838 +1578,64 @@ function formatDate(dateString) {
     });
 }
 
-function formatPrice(price, currency = 'MMK') {
-    return `${parseInt(price).toLocaleString()} ${currency}`;
+function truncateText(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
-function renderCustomEmojis(text) {
-    // Placeholder for custom emoji rendering
-    return text || '';
+function showLoading(show) {
+    loader.style.display = show ? 'flex' : 'none';
 }
 
-// Authentication Functions
-elements.adminLoginBtn.addEventListener('click', async () => {
-    const pin = elements.adminPin.value;
-    
-    if (!pin) {
-        showMessage('Please enter admin PIN', 'error');
-        return;
-    }
-    
-    showLoading();
-    
-    try {
-        const { data, error } = await supabase
-            .from('admin')
-            .select('*')
-            .eq('pin', pin)
-            .single();
-            
-        if (error || !data) {
-            showMessage('Invalid admin PIN', 'error');
-            return;
-        }
-        
-        currentAdmin = data;
-        showAdminDashboard();
-        showMessage('Admin login successful! 👑', 'success');
-        
-    } catch (error) {
-        console.error('Admin login error:', error);
-        showMessage('Login failed. Please try again.', 'error');
-    } finally {
-        hideLoading();
-    }
-});
-
-elements.adminLogoutBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to logout?')) {
-        showAdminLogin();
-        showMessage('Logged out successfully', 'success');
-    }
-});
-
-function showAdminDashboard() {
-    elements.adminLogin.style.display = 'none';
-    elements.adminDashboard.style.display = 'block';
-    
-    // Load dashboard data
-    loadDashboardData();
-    initializeNavigation();
-}
-
-function showAdminLogin() {
-    elements.adminLogin.style.display = 'flex';
-    elements.adminDashboard.style.display = 'none';
-    elements.adminPin.value = '';
-    currentAdmin = null;
-}
-
-// Navigation
-function initializeNavigation() {
-    document.querySelectorAll('.admin-nav .nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const page = btn.dataset.page;
-            showPage(page);
-        });
-    });
-    
-    // Show dashboard initially
-    showPage('dashboard');
-}
-
-function showPage(page) {
-    currentPage = page;
-    
-    // Update nav buttons
-    document.querySelectorAll('.admin-nav .nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.page === page);
-    });
-    
-    // Hide all pages
-    document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
-    
-    // Show selected page
-    const pageElement = document.getElementById(page + 'Page');
-    if (pageElement) {
-        pageElement.classList.add('active');
-        
-        // Load page-specific data
-        switch(page) {
-            case 'dashboard':
-                renderDashboardPage();
-                break;
-            case 'users':
-                renderUsersPage();
-                break;
-            case 'products':
-                renderProductsPage();
-                break;
-            case 'orders':
-                renderOrdersPage();
-                break;
-            case 'payments':
-                renderPaymentsPage();
-                break;
-            case 'news':
-                renderNewsPage();
-                break;
-            case 'social':
-                renderSocialPage();
-                break;
-            case 'about':
-                renderAboutPage();
-                break;
-        }
-    }
-}
-
-// Data Loading
-async function loadDashboardData() {
-    try {
-        showLoading();
-        
-        // Load all data in parallel
-        const [usersRes, productsRes, vouchersRes, ordersRes, paymentsRes, newsRes, socialRes, aboutRes, statsRes] = await Promise.all([
-            supabase.from('users').select('*').order('created_at', { ascending: false }),
-            supabase.from('products').select('*').order('created_at', { ascending: false }),
-            supabase.from('vouchers').select('*, products(*)').order('created_at', { ascending: false }),
-            supabase.from('orders').select('*, users(*), products(*), vouchers(*)').order('created_at', { ascending: false }),
-            supabase.from('payments').select('*').order('created_at', { ascending: false }),
-            supabase.from('news').select('*').order('created_at', { ascending: false }),
-            supabase.from('social_media').select('*').order('created_at', { ascending: false }),
-            supabase.from('about').select('*').single(),
-            supabase.from('stats').select('*').order('date', { ascending: false }).limit(30)
-        ]);
-        
-        allUsers = usersRes.data || [];
-        allProducts = productsRes.data || [];
-        allVouchers = vouchersRes.data || [];
-        allOrders = ordersRes.data || [];
-        allPayments = paymentsRes.data || [];
-        allNews = newsRes.data || [];
-        allSocial = socialRes.data || [];
-        aboutInfo = aboutRes.data;
-        statsData = statsRes.data || [];
-        
-        console.log('Dashboard data loaded successfully');
-        
-    } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        showMessage('Failed to load dashboard data', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Dashboard Page Rendering
-function renderDashboardPage() {
-    // Update stats
-    updateStatsCards();
-    renderUserChart();
-}
-
-function updateStatsCards() {
-    const today = statsData.find(s => s.date === new Date().toISOString().split('T')[0]) || {};
-    const totalUsers = allUsers.filter(u => !u.deleted).length;
-    const dailyUsers = today.daily_users || 0;
-    const monthlyUsers = allUsers.filter(u => {
-        const userDate = new Date(u.created_at);
-        const now = new Date();
-        return userDate.getMonth() === now.getMonth() && 
-               userDate.getFullYear() === now.getFullYear() &&
-               !u.deleted;
-    }).length;
-    const totalOrders = allOrders.length;
-    
-    document.getElementById('totalUsers').textContent = totalUsers;
-    document.getElementById('dailyUsers').textContent = dailyUsers;
-    document.getElementById('monthlyUsers').textContent = monthlyUsers;
-    document.getElementById('totalOrders').textContent = totalOrders;
-}
-
-function renderUserChart() {
-    const ctx = document.getElementById('userChart').getContext('2d');
-    
-    if (userChart) {
-        userChart.destroy();
-    }
-    
-    const last30Days = [];
-    const userCounts = [];
-    
-    for (let i = 29; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        const dayData = statsData.find(s => s.date === dateStr);
-        
-        last30Days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-        userCounts.push(dayData ? dayData.daily_users : 0);
-    }
-    
-    userChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: last30Days,
-            datasets: [{
-                label: 'Daily Registrations',
-                data: userCounts,
-                borderColor: '#00b4ff',
-                backgroundColor: 'rgba(0, 180, 255, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: '#ffffff'
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: {
-                        color: '#cccccc'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
-                },
-                y: {
-                    ticks: {
-                        color: '#cccccc'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
-                }
-            }
-        }
-    });
-}
-
-// Users Page
-function renderUsersPage() {
-    const usersList = document.getElementById('usersList');
-    const searchInput = document.getElementById('userSearch');
-    const refreshBtn = document.getElementById('refreshUsers');
-    
-    function renderUsers(users = allUsers) {
-        usersList.innerHTML = users.map(user => `
-            <div class="user-card ${user.banned ? 'banned' : ''}" onclick="showUserDetails('${user.id}')">
-                <div class="user-header">
-                    <img src="${user.profile_picture_url || `https://via.placeholder.com/50x50/00b4ff/ffffff?text=${user.username.charAt(0).toUpperCase()}`}" 
-                         alt="${user.username}" class="user-avatar">
-                    <div class="user-info">
-                        <h3>${user.username}</h3>
-                        <p>${user.email}</p>
-                        <small>Joined: ${formatDate(user.created_at)}</small>
-                    </div>
-                </div>
-                <div class="user-status">
-                    ${user.banned ? 
-                        `<div class="status-badge banned">Banned</div>` :
-                        `<div class="status-badge active">Active</div>`
-                    }
-                    ${user.deleted ? `<div class="status-badge">Deleted</div>` : ''}
-                </div>
-                <div class="user-actions" onclick="event.stopPropagation()">
-                    ${user.banned ? 
-                        `<button class="action-btn unban-btn" onclick="unbanUser('${user.id}')">Unban</button>` :
-                        `<button class="action-btn ban-btn" onclick="banUser('${user.id}')">Ban</button>`
-                    }
-                    <button class="action-btn delete-btn" onclick="deleteUser('${user.id}')">Delete</button>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    // Search functionality
-    if (searchInput && !searchInput.hasListener) {
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filteredUsers = allUsers.filter(user => 
-                user.username.toLowerCase().includes(query) ||
-                user.email.toLowerCase().includes(query)
-            );
-            renderUsers(filteredUsers);
-        });
-        searchInput.hasListener = true;
-    }
-    
-    // Refresh functionality
-    if (refreshBtn && !refreshBtn.hasListener) {
-        refreshBtn.addEventListener('click', () => {
-            loadDashboardData();
-            showMessage('Users refreshed', 'success');
-        });
-        refreshBtn.hasListener = true;
-    }
-    
-    renderUsers();
-}
-
-function showUserDetails(userId) {
-    const user = allUsers.find(u => u.id === userId);
-    if (!user) return;
-    
-    const userOrders = allOrders.filter(o => o.user_id === userId);
-    
-    elements.userModalBody.innerHTML = `
-        <div class="user-details">
-            <div class="user-header">
-                <img src="${user.profile_picture_url || `https://via.placeholder.com/80x80/00b4ff/ffffff?text=${user.username.charAt(0).toUpperCase()}`}" 
-                     alt="${user.username}" class="user-avatar" style="width: 80px; height: 80px;">
-                <div class="user-info">
-                    <h3>${user.username}</h3>
-                    <p>${user.email}</p>
-                    <p>PIN: ${user.pin}</p>
-                    <p>Joined: ${formatDate(user.created_at)}</p>
-                </div>
-            </div>
-            
-            ${user.banned ? `
-                <div class="ban-info">
-                    <h4>Ban Information</h4>
-                    <p><strong>Reason:</strong> ${user.ban_reason || 'No reason provided'}</p>
-                    <p><strong>Ban Time:</strong> ${user.ban_time ? formatDate(user.ban_time) : 'Not specified'}</p>
-                    <p><strong>Unban Time:</strong> ${user.unban_time ? formatDate(user.unban_time) : 'Permanent'}</p>
-                </div>
-            ` : ''}
-            
-            <div class="user-orders">
-                <h4>Order History (${userOrders.length})</h4>
-                <div class="orders-summary">
-                    ${userOrders.slice(0, 5).map(order => `
-                        <div class="order-item">
-                            <span>${order.order_id}</span>
-                            <span class="order-status ${order.status}">${order.status}</span>
-                            <span>${formatDate(order.created_at)}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            
-            <div class="user-actions-modal">
-                ${user.banned ? 
-                    `<button class="unban-btn" onclick="unbanUser('${user.id}'); closeModal('userModal')">Unban User</button>` :
-                    `<button class="ban-btn" onclick="banUser('${user.id}'); closeModal('userModal')">Ban User</button>`
-                }
-                <button class="delete-btn" onclick="deleteUser('${user.id}'); closeModal('userModal')">Delete User</button>
-            </div>
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-message">${message}</span>
+            <button class="notification-close">&times;</button>
         </div>
     `;
-    
-    elements.userModal.classList.add('show');
-}
 
-async function banUser(userId) {
-    const reason = prompt('Enter ban reason:');
-    if (!reason) return;
-    
-    const duration = prompt('Ban duration in days (leave empty for permanent):');
-    let unbanTime = null;
-    
-    if (duration && !isNaN(duration)) {
-        unbanTime = new Date();
-        unbanTime.setDate(unbanTime.getDate() + parseInt(duration));
-    }
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('users')
-            .update({
-                banned: true,
-                ban_reason: reason,
-                ban_time: new Date().toISOString(),
-                unban_time: unbanTime ? unbanTime.toISOString() : null
-            })
-            .eq('id', userId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        const userIndex = allUsers.findIndex(u => u.id === userId);
-        if (userIndex !== -1) {
-            allUsers[userIndex].banned = true;
-            allUsers[userIndex].ban_reason = reason;
-            allUsers[userIndex].ban_time = new Date().toISOString();
-            allUsers[userIndex].unban_time = unbanTime ? unbanTime.toISOString() : null;
-        }
-        
-        renderUsersPage();
-        showMessage('User banned successfully', 'success');
-        
-    } catch (error) {
-        console.error('Ban user error:', error);
-        showMessage('Failed to ban user', 'error');
-    } finally {
-        hideLoading();
-    }
-}
+    notificationContainer.appendChild(notification);
 
-async function unbanUser(userId) {
-    if (!confirm('Are you sure you want to unban this user?')) return;
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('users')
-            .update({
-                banned: false,
-                ban_reason: null,
-                ban_time: null,
-                unban_time: null
-            })
-            .eq('id', userId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        const userIndex = allUsers.findIndex(u => u.id === userId);
-        if (userIndex !== -1) {
-            allUsers[userIndex].banned = false;
-            allUsers[userIndex].ban_reason = null;
-            allUsers[userIndex].ban_time = null;
-            allUsers[userIndex].unban_time = null;
-        }
-        
-        renderUsersPage();
-        showMessage('User unbanned successfully', 'success');
-        
-    } catch (error) {
-        console.error('Unban user error:', error);
-        showMessage('Failed to unban user', 'error');
-    } finally {
-        hideLoading();
-    }
-}
+    setTimeout(() => notification.classList.add('show'), 100);
+    setTimeout(() => hideNotification(notification), 5000);
 
-async function deleteUser(userId) {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('users')
-            .update({ deleted: true })
-            .eq('id', userId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        const userIndex = allUsers.findIndex(u => u.id === userId);
-        if (userIndex !== -1) {
-            allUsers[userIndex].deleted = true;
-        }
-        
-        renderUsersPage();
-        showMessage('User deleted successfully', 'success');
-        
-    } catch (error) {
-        console.error('Delete user error:', error);
-        showMessage('Failed to delete user', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Products Page
-function renderProductsPage() {
-    const productsList = document.getElementById('productsList');
-    const addProductBtn = document.getElementById('addProductBtn');
-    
-    function renderProducts() {
-        productsList.innerHTML = allProducts.map(product => `
-            <div class="product-card">
-                ${product.images_urls && product.images_urls[0] ? 
-                    `<img src="${product.images_urls[0]}" alt="${product.name}" class="product-image">` :
-                    `<div class="product-placeholder">No Image</div>`
-                }
-                <div class="product-content">
-                    <div class="product-category">${product.category.replace('_', ' ').toUpperCase()}</div>
-                    <h3 class="product-name">${product.name}</h3>
-                    <p class="product-description">${renderCustomEmojis(product.description).substring(0, 100)}...</p>
-                    <div class="product-price">${formatPrice(product.price, product.currency)}</div>
-                    <div class="product-actions">
-                        <button class="edit-btn" onclick="editProduct('${product.id}')">Edit</button>
-                        <button class="remove-btn" onclick="deleteProduct('${product.id}')">Delete</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    if (addProductBtn && !addProductBtn.hasListener) {
-        addProductBtn.addEventListener('click', () => openProductModal());
-        addProductBtn.hasListener = true;
-    }
-    
-    renderProducts();
-}
-
-function openProductModal(productId = null) {
-    const product = productId ? allProducts.find(p => p.id === productId) : null;
-    const isEdit = !!product;
-    
-    elements.modalTitle.textContent = isEdit ? 'Edit Product' : 'Add New Product';
-    elements.modalBody.innerHTML = `
-        <form id="productForm" class="product-form">
-            <div class="form-group">
-                <label>Category</label>
-                <select id="productCategory" required>
-                    <option value="">Select Category</option>
-                    <option value="pubg_account" ${product?.category === 'pubg_account' ? 'selected' : ''}>PUBG Account</option>
-                    <option value="pubg_voucher" ${product?.category === 'pubg_voucher' ? 'selected' : ''}>PUBG Voucher</option>
-                    <option value="mlbb_account" ${product?.category === 'mlbb_account' ? 'selected' : ''}>ML Account</option>
-                    <option value="mlbb_diamond" ${product?.category === 'mlbb_diamond' ? 'selected' : ''}>ML Diamond</option>
-                    <option value="telegram_premium" ${product?.category === 'telegram_premium' ? 'selected' : ''}>Telegram Premium</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" id="productName" value="${product?.name || ''}" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Description</label>
-                <textarea id="productDescription" rows="4">${product?.description || ''}</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Price</label>
-                <input type="number" id="productPrice" value="${product?.price || ''}" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Currency</label>
-                <select id="productCurrency">
-                    <option value="MMK" ${product?.currency === 'MMK' ? 'selected' : ''}>MMK</option>
-                    <option value="USD" ${product?.currency === 'USD' ? 'selected' : ''}>USD</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Images</label>
-                <div class="file-upload" onclick="document.getElementById('productImages').click()">
-                    <input type="file" id="productImages" multiple accept="image/*">
-                    <p>Click to upload images</p>
-                </div>
-                <div id="imagePreview" class="file-preview"></div>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" onclick="closeModal('adminModal')">Cancel</button>
-                <button type="submit">${isEdit ? 'Update' : 'Create'} Product</button>
-            </div>
-        </form>
-    `;
-    
-    // Setup image preview
-    const imageInput = document.getElementById('productImages');
-    const imagePreview = document.getElementById('imagePreview');
-    
-    imageInput.addEventListener('change', (e) => {
-        imagePreview.innerHTML = '';
-        Array.from(e.target.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const div = document.createElement('div');
-                div.className = 'preview-item';
-                div.innerHTML = `
-                    <img src="${e.target.result}" class="preview-image">
-                    <button type="button" class="remove-preview" onclick="this.parentElement.remove()">×</button>
-                `;
-                imagePreview.appendChild(div);
-            };
-            reader.readAsDataURL(file);
-        });
-    });
-    
-    // Form submission
-    document.getElementById('productForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveProduct(productId);
-    });
-    
-    elements.adminModal.classList.add('show');
-}
-
-async function saveProduct(productId = null) {
-    const category = document.getElementById('productCategory').value;
-    const name = document.getElementById('productName').value;
-    const description = document.getElementById('productDescription').value;
-    const price = parseFloat(document.getElementById('productPrice').value);
-    const currency = document.getElementById('productCurrency').value;
-    const imageFiles = document.getElementById('productImages').files;
-    
-    if (!category || !name || !price) {
-        showMessage('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    try {
-        showLoading();
-        
-        let imageUrls = [];
-        
-        // Upload images if any
-        if (imageFiles.length > 0) {
-            for (const file of imageFiles) {
-                const fileName = `product-${Date.now()}-${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('uploads')
-                    .upload(fileName, file);
-                    
-                if (uploadError) throw uploadError;
-                
-                const { data: { publicUrl } } = supabase.storage
-                    .from('uploads')
-                    .getPublicUrl(fileName);
-                    
-                imageUrls.push(publicUrl);
-            }
-        }
-        
-        const productData = {
-            category,
-            name,
-            description,
-            price,
-            currency,
-            images_urls: imageUrls.length > 0 ? imageUrls : (productId ? allProducts.find(p => p.id === productId)?.images_urls : [])
-        };
-        
-        let result;
-        if (productId) {
-            // Update existing product
-            result = await supabase
-                .from('products')
-                .update(productData)
-                .eq('id', productId)
-                .select()
-                .single();
-        } else {
-            // Create new product
-            result = await supabase
-                .from('products')
-                .insert([productData])
-                .select()
-                .single();
-        }
-        
-        if (result.error) throw result.error;
-        
-        // Update local data
-        if (productId) {
-            const index = allProducts.findIndex(p => p.id === productId);
-            if (index !== -1) {
-                allProducts[index] = result.data;
-            }
-        } else {
-            allProducts.unshift(result.data);
-        }
-        
-        closeModal('adminModal');
-        renderProductsPage();
-        showMessage(`Product ${productId ? 'updated' : 'created'} successfully! 🎉`, 'success');
-        
-    } catch (error) {
-        console.error('Save product error:', error);
-        showMessage('Failed to save product', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function editProduct(productId) {
-    openProductModal(productId);
-}
-
-async function deleteProduct(productId) {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('products')
-            .delete()
-            .eq('id', productId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        allProducts = allProducts.filter(p => p.id !== productId);
-        
-        renderProductsPage();
-        showMessage('Product deleted successfully', 'success');
-        
-    } catch (error) {
-        console.error('Delete product error:', error);
-        showMessage('Failed to delete product', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Orders Page
-function renderOrdersPage() {
-    const ordersList = document.getElementById('ordersList');
-    const statusFilter = document.getElementById('orderStatusFilter');
-    const refreshBtn = document.getElementById('refreshOrders');
-    
-    function renderOrders(orders = allOrders) {
-        ordersList.innerHTML = orders.map(order => `
-            <div class="order-card" onclick="showOrderDetails('${order.id}')">
-                <div class="order-header">
-                    <div class="order-id">${order.order_id}</div>
-                    <div class="order-status ${order.status}">${order.status.toUpperCase()}</div>
-                </div>
-                <div class="order-info">
-                    <div class="order-field">
-                        <label>Customer</label>
-                        <span>${order.users?.username || 'Unknown'}</span>
-                    </div>
-                    <div class="order-field">
-                        <label>Product</label>
-                        <span>${order.products?.name || order.vouchers?.amount || 'Unknown'}</span>
-                    </div>
-                    <div class="order-field">
-                        <label>Payment</label>
-                        <span>${order.payment_method}</span>
-                    </div>
-                    <div class="order-field">
-                        <label>Date</label>
-                        <span>${formatDate(order.created_at)}</span>
-                    </div>
-                </div>
-                ${order.status === 'pending' ? `
-                    <div class="order-actions" onclick="event.stopPropagation()">
-                        <button class="approve-btn" onclick="approveOrder('${order.id}')">Approve</button>
-                        <button class="reject-btn" onclick="rejectOrder('${order.id}')">Reject</button>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-    }
-    
-    // Filter functionality
-    if (statusFilter && !statusFilter.hasListener) {
-        statusFilter.addEventListener('change', (e) => {
-            const status = e.target.value;
-            const filteredOrders = status ? allOrders.filter(o => o.status === status) : allOrders;
-            renderOrders(filteredOrders);
-        });
-        statusFilter.hasListener = true;
-    }
-    
-    // Refresh functionality
-    if (refreshBtn && !refreshBtn.hasListener) {
-        refreshBtn.addEventListener('click', () => {
-            loadDashboardData();
-            showMessage('Orders refreshed', 'success');
-        });
-        refreshBtn.hasListener = true;
-    }
-    
-    renderOrders();
-}
-
-function showOrderDetails(orderId) {
-    const order = allOrders.find(o => o.id === orderId);
-    if (!order) return;
-    
-    elements.orderModalBody.innerHTML = `
-        <div class="order-details">
-            <div class="order-header">
-                <h3>${order.order_id}</h3>
-                <div class="order-status ${order.status}">${order.status.toUpperCase()}</div>
-            </div>
-            
-            <div class="order-info-grid">
-                <div class="info-section">
-                    <h4>Customer Information</h4>
-                    <p><strong>Username:</strong> ${order.users?.username || 'Unknown'}</p>
-                    <p><strong>Email:</strong> ${order.users?.email || 'Unknown'}</p>
-                    <p><strong>Buyer Name:</strong> ${order.buyer_name}</p>
-                    <p><strong>Contact:</strong> ${order.contact_platform} - ${order.contact_address}</p>
-                </div>
-                
-                <div class="info-section">
-                    <h4>Order Information</h4>
-                    <p><strong>Product:</strong> ${order.products?.name || order.vouchers?.amount || 'Unknown'}</p>
-                    <p><strong>Game ID:</strong> ${order.game_id || 'N/A'}</p>
-                    <p><strong>Payment Method:</strong> ${order.payment_method}</p>
-                    <p><strong>Transaction Ref:</strong> ${order.transaction_ref}</p>
-                    <p><strong>Order Date:</strong> ${formatDate(order.created_at)}</p>
-                </div>
-            </div>
-            
-            ${order.approval_note ? `
-                <div class="info-section">
-                    <h4>Admin Note</h4>
-                    <p>${order.approval_note}</p>
-                </div>
-            ` : ''}
-            
-            ${order.status === 'pending' ? `
-                <div class="order-actions-modal">
-                    <button class="approve-btn" onclick="approveOrder('${order.id}'); closeModal('orderModal')">Approve Order</button>
-                    <button class="reject-btn" onclick="rejectOrder('${order.id}'); closeModal('orderModal')">Reject Order</button>
-                </div>
-            ` : ''}
-        </div>
-    `;
-    
-    elements.orderModal.classList.add('show');
-}
-
-async function approveOrder(orderId) {
-    const note = prompt('Enter approval note (optional):') || 'Order approved';
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('orders')
-            .update({
-                status: 'approved',
-                approval_note: note
-            })
-            .eq('id', orderId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        const orderIndex = allOrders.findIndex(o => o.id === orderId);
-        if (orderIndex !== -1) {
-            allOrders[orderIndex].status = 'approved';
-            allOrders[orderIndex].approval_note = note;
-        }
-        
-        renderOrdersPage();
-        showMessage('Order approved successfully! ✅', 'success');
-        
-    } catch (error) {
-        console.error('Approve order error:', error);
-        showMessage('Failed to approve order', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function rejectOrder(orderId) {
-    const note = prompt('Enter rejection reason:');
-    if (!note) return;
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('orders')
-            .update({
-                status: 'rejected',
-                approval_note: note
-            })
-            .eq('id', orderId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        const orderIndex = allOrders.findIndex(o => o.id === orderId);
-        if (orderIndex !== -1) {
-            allOrders[orderIndex].status = 'rejected';
-            allOrders[orderIndex].approval_note = note;
-        }
-        
-        renderOrdersPage();
-        showMessage('Order rejected', 'success');
-        
-    } catch (error) {
-        console.error('Reject order error:', error);
-        showMessage('Failed to reject order', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Payments Page
-function renderPaymentsPage() {
-    const paymentsList = document.getElementById('paymentsList');
-    const addPaymentBtn = document.getElementById('addPaymentBtn');
-    
-    function renderPayments() {
-        paymentsList.innerHTML = allPayments.map(payment => `
-            <div class="payment-card">
-                <div class="payment-header">
-                    ${payment.icon_url ? 
-                        `<img src="${payment.icon_url}" alt="${payment.name}" class="payment-icon">` :
-                        `<div class="payment-icon" style="background: #00b4ff; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">💳</div>`
-                    }
-                    <div class="payment-info">
-                        <h3>${payment.name}</h3>
-                    </div>
-                </div>
-                <div class="payment-address">${payment.address}</div>
-                <div class="payment-description">${renderCustomEmojis(payment.description)}</div>
-                <div class="payment-actions">
-                    <button class="edit-btn" onclick="editPayment('${payment.id}')">Edit</button>
-                    <button class="remove-btn" onclick="deletePayment('${payment.id}')">Delete</button>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    if (addPaymentBtn && !addPaymentBtn.hasListener) {
-        addPaymentBtn.addEventListener('click', () => openPaymentModal());
-        addPaymentBtn.hasListener = true;
-    }
-    
-    renderPayments();
-}
-
-function openPaymentModal(paymentId = null) {
-    const payment = paymentId ? allPayments.find(p => p.id === paymentId) : null;
-    const isEdit = !!payment;
-    
-    elements.modalTitle.textContent = isEdit ? 'Edit Payment Method' : 'Add Payment Method';
-    elements.modalBody.innerHTML = `
-        <form id="paymentForm" class="payment-form">
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" id="paymentName" value="${payment?.name || ''}" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Address/Number</label>
-                <input type="text" id="paymentAddress" value="${payment?.address || ''}" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Description</label>
-                <textarea id="paymentDescription" rows="3">${payment?.description || ''}</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Icon</label>
-                <div class="file-upload" onclick="document.getElementById('paymentIcon').click()">
-                    <input type="file" id="paymentIcon" accept="image/*">
-                    <p>Click to upload icon</p>
-                </div>
-                <div id="iconPreview" class="file-preview"></div>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" onclick="closeModal('adminModal')">Cancel</button>
-                <button type="submit">${isEdit ? 'Update' : 'Create'} Payment Method</button>
-            </div>
-        </form>
-    `;
-    
-    // Setup icon preview
-    const iconInput = document.getElementById('paymentIcon');
-    const iconPreview = document.getElementById('iconPreview');
-    
-    iconInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                iconPreview.innerHTML = `
-                    <div class="preview-item">
-                        <img src="${e.target.result}" class="preview-image">
-                        <button type="button" class="remove-preview" onclick="this.parentElement.remove(); document.getElementById('paymentIcon').value = '';">×</button>
-                    </div>
-                `;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
-    // Form submission
-    document.getElementById('paymentForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        savePayment(paymentId);
-    });
-    
-    elements.adminModal.classList.add('show');
-}
-
-async function savePayment(paymentId = null) {
-    const name = document.getElementById('paymentName').value;
-    const address = document.getElementById('paymentAddress').value;
-    const description = document.getElementById('paymentDescription').value;
-    const iconFile = document.getElementById('paymentIcon').files[0];
-    
-    if (!name || !address) {
-        showMessage('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    try {
-        showLoading();
-        
-        let iconUrl = paymentId ? allPayments.find(p => p.id === paymentId)?.icon_url : '';
-        
-        // Upload icon if provided
-        if (iconFile) {
-            const fileName = `payment-${Date.now()}-${Math.random().toString(36).substring(7)}.${iconFile.name.split('.').pop()}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('uploads')
-                .upload(fileName, iconFile);
-                
-            if (uploadError) throw uploadError;
-            
-            const { data: { publicUrl } } = supabase.storage
-                .from('uploads')
-                .getPublicUrl(fileName);
-                
-            iconUrl = publicUrl;
-        }
-        
-        const paymentData = {
-            name,
-            address,
-            description,
-            icon_url: iconUrl
-        };
-        
-        let result;
-        if (paymentId) {
-            // Update existing payment
-            result = await supabase
-                .from('payments')
-                .update(paymentData)
-                .eq('id', paymentId)
-                .select()
-                .single();
-        } else {
-            // Create new payment
-            result = await supabase
-                .from('payments')
-                .insert([paymentData])
-                .select()
-                .single();
-        }
-        
-        if (result.error) throw result.error;
-        
-        // Update local data
-        if (paymentId) {
-            const index = allPayments.findIndex(p => p.id === paymentId);
-            if (index !== -1) {
-                allPayments[index] = result.data;
-            }
-        } else {
-            allPayments.unshift(result.data);
-        }
-        
-        closeModal('adminModal');
-        renderPaymentsPage();
-        showMessage(`Payment method ${paymentId ? 'updated' : 'created'} successfully! 💳`, 'success');
-        
-    } catch (error) {
-        console.error('Save payment error:', error);
-        showMessage('Failed to save payment method', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function editPayment(paymentId) {
-    openPaymentModal(paymentId);
-}
-
-async function deletePayment(paymentId) {
-    if (!confirm('Are you sure you want to delete this payment method?')) return;
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('payments')
-            .delete()
-            .eq('id', paymentId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        allPayments = allPayments.filter(p => p.id !== paymentId);
-        
-        renderPaymentsPage();
-        showMessage('Payment method deleted successfully', 'success');
-        
-    } catch (error) {
-        console.error('Delete payment error:', error);
-        showMessage('Failed to delete payment method', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// News Page
-function renderNewsPage() {
-    const newsList = document.getElementById('newsList');
-    const addNewsBtn = document.getElementById('addNewsBtn');
-    
-    function renderNews() {
-        newsList.innerHTML = allNews.map(news => `
-            <div class="news-card">
-                ${news.images_urls && news.images_urls.length > 0 ? `
-                    <div class="news-images">
-                        ${news.images_urls.slice(0, 3).map(img => `
-                            <img src="${img}" alt="News Image" class="news-image">
-                        `).join('')}
-                    </div>
-                ` : ''}
-                <div class="news-content">
-                    <h3 class="news-title">${news.title}</h3>
-                    <p class="news-description">${renderCustomEmojis(news.description).substring(0, 150)}...</p>
-                    <div class="news-actions">
-                        <button class="edit-btn" onclick="editNews('${news.id}')">Edit</button>
-                        <button class="remove-btn" onclick="deleteNews('${news.id}')">Delete</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    if (addNewsBtn && !addNewsBtn.hasListener) {
-        addNewsBtn.addEventListener('click', () => openNewsModal());
-        addNewsBtn.hasListener = true;
-    }
-    
-    renderNews();
-}
-
-function openNewsModal(newsId = null) {
-    const news = newsId ? allNews.find(n => n.id === newsId) : null;
-    const isEdit = !!news;
-    
-    elements.modalTitle.textContent = isEdit ? 'Edit News' : 'Add News';
-    elements.modalBody.innerHTML = `
-        <form id="newsForm" class="news-form">
-            <div class="form-group">
-                <label>Title</label>
-                <input type="text" id="newsTitle" value="${news?.title || ''}" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Description</label>
-                <textarea id="newsDescription" rows="5">${news?.description || ''}</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Images</label>
-                <div class="file-upload" onclick="document.getElementById('newsImages').click()">
-                    <input type="file" id="newsImages" multiple accept="image/*">
-                    <p>Click to upload images</p>
-                </div>
-                <div id="newsImagePreview" class="file-preview"></div>
-            </div>
-            
-            <div class="form-group">
-                <label>Video</label>
-                <div class="file-upload" onclick="document.getElementById('newsVideo').click()">
-                    <input type="file" id="newsVideo" accept="video/*">
-                    <p>Click to upload video</p>
-                </div>
-                <div id="newsVideoPreview" class="file-preview"></div>
-            </div>
-            
-            <div class="form-group">
-                <label>Telegram Link</label>
-                <input type="url" id="newsTelegramLink" value="${news?.telegram_link || ''}" placeholder="https://t.me/...">
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" onclick="closeModal('adminModal')">Cancel</button>
-                <button type="submit">${isEdit ? 'Update' : 'Create'} News</button>
-            </div>
-        </form>
-    `;
-    
-    // Setup file previews
-    setupFilePreview('newsImages', 'newsImagePreview', 'image');
-    setupFilePreview('newsVideo', 'newsVideoPreview', 'video');
-    
-    // Form submission
-    document.getElementById('newsForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveNews(newsId);
-    });
-    
-    elements.adminModal.classList.add('show');
-}
-
-function setupFilePreview(inputId, previewId, type) {
-    const input = document.getElementById(inputId);
-    const preview = document.getElementById(previewId);
-    
-    input.addEventListener('change', (e) => {
-        preview.innerHTML = '';
-        const files = type === 'image' ? Array.from(e.target.files) : [e.target.files[0]];
-        
-        files.filter(Boolean).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const div = document.createElement('div');
-                div.className = 'preview-item';
-                
-                if (type === 'image') {
-                    div.innerHTML = `
-                        <img src="${e.target.result}" class="preview-image">
-                        <button type="button" class="remove-preview" onclick="this.parentElement.remove()">×</button>
-                    `;
-                } else {
-                    div.innerHTML = `
-                        <video src="${e.target.result}" class="preview-image" controls></video>
-                        <button type="button" class="remove-preview" onclick="this.parentElement.remove()">×</button>
-                    `;
-                }
-                
-                preview.appendChild(div);
-            };
-            reader.readAsDataURL(file);
-        });
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        hideNotification(notification);
     });
 }
 
-async function saveNews(newsId = null) {
-    const title = document.getElementById('newsTitle').value;
-    const description = document.getElementById('newsDescription').value;
-    const telegramLink = document.getElementById('newsTelegramLink').value;
-    const imageFiles = document.getElementById('newsImages').files;
-    const videoFile = document.getElementById('newsVideo').files[0];
-    
-    if (!title) {
-        showMessage('Please enter a title', 'error');
-        return;
-    }
-    
-    try {
-        showLoading();
-        
-        let imageUrls = [];
-        let videoUrl = '';
-        
-        // Upload images if any
-        if (imageFiles.length > 0) {
-            for (const file of imageFiles) {
-                const fileName = `news-${Date.now()}-${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('uploads')
-                    .upload(fileName, file);
-                    
-                if (uploadError) throw uploadError;
-                
-                const { data: { publicUrl } } = supabase.storage
-                    .from('uploads')
-                    .getPublicUrl(fileName);
-                    
-                imageUrls.push(publicUrl);
-            }
+function hideNotification(notification) {
+    notification.classList.remove('show');
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
         }
-        
-        // Upload video if provided
-        if (videoFile) {
-            const fileName = `news-video-${Date.now()}.${videoFile.name.split('.').pop()}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('uploads')
-                .upload(fileName, videoFile);
-                
-            if (uploadError) throw uploadError;
-            
-            const { data: { publicUrl } } = supabase.storage
-                .from('uploads')
-                .getPublicUrl(fileName);
-                
-            videoUrl = publicUrl;
-        }
-        
-        const newsData = {
-            title,
-            description,
-            telegram_link: telegramLink,
-            images_urls: imageUrls.length > 0 ? imageUrls : (newsId ? allNews.find(n => n.id === newsId)?.images_urls : []),
-            video_url: videoUrl || (newsId ? allNews.find(n => n.id === newsId)?.video_url : '')
-        };
-        
-        let result;
-        if (newsId) {
-            // Update existing news
-            result = await supabase
-                .from('news')
-                .update(newsData)
-                .eq('id', newsId)
-                .select()
-                .single();
-        } else {
-            // Create new news
-            result = await supabase
-                .from('news')
-                .insert([newsData])
-                .select()
-                .single();
-        }
-        
-        if (result.error) throw result.error;
-        
-        // Update local data
-        if (newsId) {
-            const index = allNews.findIndex(n => n.id === newsId);
-            if (index !== -1) {
-                allNews[index] = result.data;
-            }
-        } else {
-            allNews.unshift(result.data);
-        }
-        
-        closeModal('adminModal');
-        renderNewsPage();
-        showMessage(`News ${newsId ? 'updated' : 'created'} successfully! 📰`, 'success');
-        
-    } catch (error) {
-        console.error('Save news error:', error);
-        showMessage('Failed to save news', 'error');
-    } finally {
-        hideLoading();
-    }
+    }, 300);
 }
 
-function editNews(newsId) {
-    openNewsModal(newsId);
+function showConfirmation(title, message, callback) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+
+    const confirmBtn = document.getElementById('confirmActionBtn');
+    confirmBtn.onclick = function() {
+        callback();
+        closeModal('confirmModal');
+    };
+
+    showModal('confirmModal');
 }
 
-async function deleteNews(newsId) {
-    if (!confirm('Are you sure you want to delete this news?')) return;
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('news')
-            .delete()
-            .eq('id', newsId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        allNews = allNews.filter(n => n.id !== newsId);
-        
-        renderNewsPage();
-        showMessage('News deleted successfully', 'success');
-        
-    } catch (error) {
-        console.error('Delete news error:', error);
-        showMessage('Failed to delete news', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Social Media Page
-function renderSocialPage() {
-    const socialList = document.getElementById('socialList');
-    const addSocialBtn = document.getElementById('addSocialBtn');
-    
-    function renderSocial() {
-        socialList.innerHTML = allSocial.map(social => `
-            <div class="social-card">
-                <div class="social-platform">${social.platform}</div>
-                <div class="social-link">${social.link}</div>
-                <div class="social-actions">
-                    <button class="edit-btn" onclick="editSocial('${social.id}')">Edit</button>
-                    <button class="remove-btn" onclick="deleteSocial('${social.id}')">Delete</button>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    if (addSocialBtn && !addSocialBtn.hasListener) {
-        addSocialBtn.addEventListener('click', () => openSocialModal());
-        addSocialBtn.hasListener = true;
-    }
-    
-    renderSocial();
-}
-
-function openSocialModal(socialId = null) {
-    const social = socialId ? allSocial.find(s => s.id === socialId) : null;
-    const isEdit = !!social;
-    
-    elements.modalTitle.textContent = isEdit ? 'Edit Social Media' : 'Add Social Media';
-    elements.modalBody.innerHTML = `
-        <form id="socialForm" class="social-form">
-            <div class="form-group">
-                <label>Platform</label>
-                <select id="socialPlatform" required>
-                    <option value="">Select Platform</option>
-                    <option value="YouTube" ${social?.platform === 'YouTube' ? 'selected' : ''}>YouTube</option>
-                    <option value="Facebook" ${social?.platform === 'Facebook' ? 'selected' : ''}>Facebook</option>
-                    <option value="TikTok" ${social?.platform === 'TikTok' ? 'selected' : ''}>TikTok</option>
-                    <option value="Instagram" ${social?.platform === 'Instagram' ? 'selected' : ''}>Instagram</option>
-                    <option value="Telegram" ${social?.platform === 'Telegram' ? 'selected' : ''}>Telegram</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Link</label>
-                <input type="url" id="socialLink" value="${social?.link || ''}" required>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" onclick="closeModal('adminModal')">Cancel</button>
-                <button type="submit">${isEdit ? 'Update' : 'Add'} Social Media</button>
-            </div>
-        </form>
-    `;
-    
-    // Form submission
-    document.getElementById('socialForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveSocial(socialId);
-    });
-    
-    elements.adminModal.classList.add('show');
-}
-
-async function saveSocial(socialId = null) {
-    const platform = document.getElementById('socialPlatform').value;
-    const link = document.getElementById('socialLink').value;
-    
-    if (!platform || !link) {
-        showMessage('Please fill in all fields', 'error');
-        return;
-    }
-    
-    try {
-        showLoading();
-        
-        const socialData = { platform, link };
-        
-        let result;
-        if (socialId) {
-            // Update existing social
-            result = await supabase
-                .from('social_media')
-                .update(socialData)
-                .eq('id', socialId)
-                .select()
-                .single();
-        } else {
-            // Create new social
-            result = await supabase
-                .from('social_media')
-                .insert([socialData])
-                .select()
-                .single();
-        }
-        
-        if (result.error) throw result.error;
-        
-        // Update local data
-        if (socialId) {
-            const index = allSocial.findIndex(s => s.id === socialId);
-            if (index !== -1) {
-                allSocial[index] = result.data;
-            }
-        } else {
-            allSocial.unshift(result.data);
-        }
-        
-        closeModal('adminModal');
-        renderSocialPage();
-        showMessage(`Social media ${socialId ? 'updated' : 'added'} successfully! 📱`, 'success');
-        
-    } catch (error) {
-        console.error('Save social error:', error);
-        showMessage('Failed to save social media', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function editSocial(socialId) {
-    openSocialModal(socialId);
-}
-
-async function deleteSocial(socialId) {
-    if (!confirm('Are you sure you want to delete this social media link?')) return;
-    
-    try {
-        showLoading();
-        
-        const { error } = await supabase
-            .from('social_media')
-            .delete()
-            .eq('id', socialId);
-            
-        if (error) throw error;
-        
-        // Update local data
-        allSocial = allSocial.filter(s => s.id !== socialId);
-        
-        renderSocialPage();
-        showMessage('Social media deleted successfully', 'success');
-        
-    } catch (error) {
-        console.error('Delete social error:', error);
-        showMessage('Failed to delete social media', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// About Page
-function renderAboutPage() {
-    const aboutForm = document.getElementById('aboutForm');
-    
-    aboutForm.innerHTML = `
-        <form id="aboutInfoForm" class="about-info-form">
-            <div class="form-group">
-                <label>Company Name</label>
-                <input type="text" id="aboutName" value="${aboutInfo?.name || ''}" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Description</label>
-                <textarea id="aboutDescription" rows="5">${aboutInfo?.description || ''}</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Developer Icon</label>
-                <div class="file-upload" onclick="document.getElementById('aboutIcon').click()">
-                    <input type="file" id="aboutIcon" accept="image/*">
-                    <p>Click to upload developer icon</p>
-                </div>
-                <div id="aboutIconPreview" class="file-preview"></div>
-            </div>
-            
-            <div class="social-links-form">
-                <h4>Social Links</h4>
-                <div id="socialLinksContainer">
-                    ${aboutInfo?.social_links ? aboutInfo.social_links.map((link, index) => `
-                        <div class="social-link-item">
-                            <input type="text" placeholder="Link Name" value="${link.name}" data-index="${index}" data-field="name">
-                            <input type="url" placeholder="Link URL" value="${link.link}" data-index="${index}" data-field="link">
-                            <button type="button" class="remove-social-btn" onclick="removeSocialLink(${index})">×</button>
-                        </div>
-                    `).join('') : ''}
-                </div>
-                <button type="button" class="add-social-btn" onclick="addSocialLink()">
-                    <i class="fas fa-plus"></i> Add Social Link
-                </button>
-            </div>
-            
-            <button type="submit" class="save-btn">Save About Information</button>
-        </form>
-    `;
-    
-    // Setup icon preview
-    const iconInput = document.getElementById('aboutIcon');
-    const iconPreview = document.getElementById('aboutIconPreview');
-    
-    iconInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                iconPreview.innerHTML = `
-                    <div class="preview-item">
-                        <img src="${e.target.result}" class="preview-image">
-                        <button type="button" class="remove-preview" onclick="this.parentElement.remove(); document.getElementById('aboutIcon').value = '';">×</button>
-                    </div>
-                `;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
-    // Form submission
-    document.getElementById('aboutInfoForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveAboutInfo();
-    });
-}
-
-function addSocialLink() {
-    const container = document.getElementById('socialLinksContainer');
-    const index = container.children.length;
-    
-    const div = document.createElement('div');
-    div.className = 'social-link-item';
-    div.innerHTML = `
-        <input type="text" placeholder="Link Name" data-index="${index}" data-field="name">
-        <input type="url" placeholder="Link URL" data-index="${index}" data-field="link">
-        <button type="button" class="remove-social-btn" onclick="removeSocialLink(${index})">×</button>
-    `;
-    
-    container.appendChild(div);
-}
-
-function removeSocialLink(index) {
-    const container = document.getElementById('socialLinksContainer');
-    const items = container.querySelectorAll('.social-link-item');
-    if (items[index]) {
-        items[index].remove();
-    }
-}
-
-async function saveAboutInfo() {
-    const name = document.getElementById('aboutName').value;
-    const description = document.getElementById('aboutDescription').value;
-    const iconFile = document.getElementById('aboutIcon').files[0];
-    
-    // Collect social links
-    const socialLinks = [];
-    const socialInputs = document.querySelectorAll('#socialLinksContainer .social-link-item');
-    
-    socialInputs.forEach(item => {
-        const nameInput = item.querySelector('input[data-field="name"]');
-        const linkInput = item.querySelector('input[data-field="link"]');
-        
-        if (nameInput.value && linkInput.value) {
-            socialLinks.push({
-                name: nameInput.value,
-                link: linkInput.value
-            });
-        }
-    });
-    
-    if (!name) {
-        showMessage('Please enter company name', 'error');
-        return;
-    }
-    
-    try {
-        showLoading();
-        
-        let iconUrl = aboutInfo?.developer_icon_url || '';
-        
-        // Upload icon if provided
-        if (iconFile) {
-            const fileName = `about-icon-${Date.now()}.${iconFile.name.split('.').pop()}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('uploads')
-                .upload(fileName, iconFile);
-                
-            if (uploadError) throw uploadError;
-            
-            const { data: { publicUrl } } = supabase.storage
-                .from('uploads')
-                .getPublicUrl(fileName);
-                
-            iconUrl = publicUrl;
-        }
-        
-        const aboutData = {
-            name,
-            description,
-            developer_icon_url: iconUrl,
-            social_links: socialLinks,
-            updated_at: new Date().toISOString()
-        };
-        
-        let result;
-        if (aboutInfo) {
-            // Update existing about info
-            result = await supabase
-                .from('about')
-                .update(aboutData)
-                .eq('id', aboutInfo.id)
-                .select()
-                .single();
-        } else {
-            // Create new about info
-            result = await supabase
-                .from('about')
-                .insert([aboutData])
-                .select()
-                .single();
-        }
-        
-        if (result.error) throw result.error;
-        
-        aboutInfo = result.data;
-        showMessage('About information saved successfully! ℹ️', 'success');
-        
-    } catch (error) {
-        console.error('Save about error:', error);
-        showMessage('Failed to save about information', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Modal Management
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('show');
-}
-
-// Modal close events
-document.querySelectorAll('.modal-close').forEach(btn => {
-    btn.addEventListener('click', () => {
-        btn.closest('.modal').classList.remove('show');
-    });
-});
-
-// Click outside modal to close
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('show');
-        }
-    });
-});
-
-// Real-time Updates
-function setupRealTimeUpdates() {
-    // Listen for new orders
-    const orderChannel = supabase
-        .channel('admin_orders')
-        .on('postgres_changes', 
-            { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'orders'
-            }, 
-            (payload) => {
-                // Add new order to local data
-                allOrders.unshift(payload.new);
-                
-                // Show notification
-                showMessage('🔔 New order received!', 'success');
-                
-                // Update dashboard if on orders page
-                if (currentPage === 'orders') {
-                    renderOrdersPage();
-                } else if (currentPage === 'dashboard') {
-                    updateStatsCards();
-                }
-            }
-        )
-        .subscribe();
-    
-    // Listen for new user registrations
-    const userChannel = supabase
-        .channel('admin_users')
-        .on('postgres_changes', 
-            { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'users'
-            }, 
-            (payload) => {
-                // Add new user to local data
-                allUsers.unshift(payload.new);
-                
-                // Show notification
-                showMessage('👋 New user registered!', 'success');
-                
-                // Update dashboard if on users page
-                if (currentPage === 'users') {
-                    renderUsersPage();
-                } else if (currentPage === 'dashboard') {
-                    updateStatsCards();
-                }
-            }
-        )
-        .subscribe();
-}
-
-// Initialize Application
-document.addEventListener('DOMContentLoaded', () => {
-    // Hide loading initially
-    hideLoading();
-    
-    // Show admin login initially
-    showAdminLogin();
-    
-    console.log('Mafia Admin Dashboard initialized! 👑');
-});
-
-// Setup real-time updates after admin login
-function initRealTimeAfterLogin() {
-    if (currentAdmin) {
-        setupRealTimeUpdates();
-    }
-}
-
-// Enhanced showAdminDashboard to include real-time setup
-const originalShowAdminDashboard = showAdminDashboard;
-showAdminDashboard = function() {
-    originalShowAdminDashboard();
-    initRealTimeAfterLogin();
+// Export for global access
+window.AdminPanel = {
+    loadProducts,
+    loadOrders,
+    loadNews,
+    loadPageIcons,
+    showNotification,
+    formatPrice,
+    formatDate
 };
-
-// Global functions for onclick handlers
-window.showUserDetails = showUserDetails;
-window.banUser = banUser;
-window.unbanUser = unbanUser;
-window.deleteUser = deleteUser;
-window.editProduct = editProduct;
-window.deleteProduct = deleteProduct;
-window.showOrderDetails = showOrderDetails;
-window.approveOrder = approveOrder;
-window.rejectOrder = rejectOrder;
-window.editPayment = editPayment;
-window.deletePayment = deletePayment;
-window.editNews = editNews;
-window.deleteNews = deleteNews;
-window.editSocial = editSocial;
-window.deleteSocial = deleteSocial;
-window.closeModal = closeModal;
-window.addSocialLink = addSocialLink;
-window.removeSocialLink = removeSocialLink;
