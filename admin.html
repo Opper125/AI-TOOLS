@@ -3,276 +3,584 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mafia - Admin Dashboard</title>
+    <title>Admin Panel - Gaming Platform</title>
     <link rel="stylesheet" href="admin.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <p>Loading...</p>
+    <div id="loader" class="loader-overlay">
+        <div class="loader">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Loading...</div>
         </div>
     </div>
 
-    <!-- Message Popup -->
-    <div id="messagePopup" class="message-popup">
-        <div class="message-content">
-            <span class="message-text"></span>
-            <div class="message-timer"></div>
-            <button class="message-close">❎</button>
-        </div>
-    </div>
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="notification-container"></div>
 
-    <!-- Main Container -->
-    <div id="mainContainer" class="main-container">
-        <!-- Admin Login -->
-        <section id="adminLogin" class="admin-login">
-            <div class="login-container">
-                <div class="logo-container">
-                    <img src="https://raw.githubusercontent.com/Opper125/AI-TOOLS/663b060262bdf9fb617d1b01d21597eb859e96c3/mafialogo.png" alt="Mafia Logo" class="logo">
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Gaming Platform Admin</h1>
+                <div class="admin-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="totalOrders">0</span> Orders
+                    </span>
+                    <span class="stat-item">
+                        <i class="fas fa-box"></i>
+                        <span id="totalProducts">0</span> Products
+                    </span>
+                    <span class="stat-item">
+                        <i class="fas fa-dollar-sign"></i>
+                        <span id="totalRevenue">0</span> MMK
+                    </span>
                 </div>
-                <h2>Admin Access</h2>
-                <div class="form-group">
-                    <input type="password" id="adminPin" placeholder="Enter Admin PIN" required>
-                    <span class="error-message" id="adminPinError"></span>
-                </div>
-                <button id="adminLoginBtn" class="admin-login-btn">Access Dashboard</button>
+            </div>
+            <div class="header-right">
+                <button class="btn-secondary" onclick="window.location.href='index.html'">
+                    <i class="fas fa-external-link-alt"></i> View Site
+                </button>
+                <button class="btn-secondary" onclick="window.location.href='styles.html'">
+                    <i class="fas fa-palette"></i> Customize Styles
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="admin-nav">
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="products">
+                <i class="fas fa-box"></i> Products
+            </button>
+            <button class="nav-tab" data-tab="vouchers">
+                <i class="fas fa-ticket-alt"></i> Voucher Menus
+            </button>
+            <button class="nav-tab" data-tab="orders">
+                <i class="fas fa-shopping-cart"></i> Orders
+            </button>
+            <button class="nav-tab" data-tab="news">
+                <i class="fas fa-newspaper"></i> News
+            </button>
+            <button class="nav-tab" data-tab="icons">
+                <i class="fas fa-icons"></i> Page Icons
+            </button>
+            <button class="nav-tab" data-tab="settings">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <!-- Products Tab -->
+        <section id="productsTab" class="tab-content active">
+            <div class="section-header">
+                <h2>Product Management</h2>
+                <button class="btn-primary" onclick="showAddProductModal()">
+                    <i class="fas fa-plus"></i> Add Product
+                </button>
+            </div>
+
+            <div class="filter-bar">
+                <select id="productCategoryFilter" class="form-select">
+                    <option value="">All Categories</option>
+                    <option value="pubg">PUBG Mobile</option>
+                    <option value="ml">Mobile Legends</option>
+                    <option value="telegram">Telegram Premium</option>
+                </select>
+                <select id="productStatusFilter" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <input type="text" id="productSearchInput" class="form-input" placeholder="Search products...">
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be loaded here -->
             </div>
         </section>
 
-        <!-- Admin Dashboard -->
-        <section id="adminDashboard" class="admin-dashboard" style="display: none;">
-            <!-- Header -->
-            <header class="admin-header">
-                <div class="logo-container">
-                    <img src="https://raw.githubusercontent.com/Opper125/AI-TOOLS/663b060262bdf9fb617d1b01d21597eb859e96c3/mafialogo.png" alt="Mafia Logo" class="logo">
-                </div>
-                <nav class="admin-nav">
-                    <button class="nav-btn active" data-page="dashboard">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </button>
-                    <button class="nav-btn" data-page="users">
-                        <i class="fas fa-users"></i> Users
-                    </button>
-                    <button class="nav-btn" data-page="products">
-                        <i class="fas fa-box"></i> Products
-                    </button>
-                    <button class="nav-btn" data-page="orders">
-                        <i class="fas fa-shopping-cart"></i> Orders
-                    </button>
-                    <button class="nav-btn" data-page="payments">
-                        <i class="fas fa-credit-card"></i> Payments
-                    </button>
-                    <button class="nav-btn" data-page="news">
-                        <i class="fas fa-newspaper"></i> News
-                    </button>
-                    <button class="nav-btn" data-page="social">
-                        <i class="fas fa-share-alt"></i> Social
-                    </button>
-                    <button class="nav-btn" data-page="about">
-                        <i class="fas fa-info-circle"></i> About
-                    </button>
-                    <button class="logout-btn" id="adminLogoutBtn">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                </nav>
-            </header>
-
-            <!-- Dashboard Page -->
-            <div id="dashboardPage" class="admin-page active">
-                <div class="page-header">
-                    <h1>Admin Dashboard</h1>
-                    <p>Overview of platform statistics</p>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalUsers">0</h3>
-                            <p>Total Users</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="dailyUsers">0</h3>
-                            <p>Today's Registrations</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-calendar-week"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="monthlyUsers">0</h3>
-                            <p>This Month</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-shopping-cart"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalOrders">0</h3>
-                            <p>Total Orders</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="charts-container">
-                    <div class="chart-card">
-                        <h3>User Registration Trends</h3>
-                        <canvas id="userChart" style="height: 400px;"></canvas>
-                    </div>
-                </div>
+        <!-- Voucher Menus Tab -->
+        <section id="vouchersTab" class="tab-content">
+            <div class="section-header">
+                <h2>Voucher Menu Management</h2>
+                <button class="btn-primary" onclick="showAddVoucherMenuModal()">
+                    <i class="fas fa-plus"></i> Add Voucher Menu
+                </button>
             </div>
 
-            <!-- Users Management Page -->
-            <div id="usersPage" class="admin-page">
-                <div class="page-header">
-                    <h1>User Management</h1>
-                    <p>Manage registered users</p>
-                </div>
-                <div class="users-controls">
-                    <input type="text" id="userSearch" placeholder="Search users..." class="search-input">
-                    <button id="refreshUsers" class="refresh-btn">
-                        <i class="fas fa-sync"></i> Refresh
-                    </button>
-                </div>
-                <div id="usersList" class="users-list">
-                    <!-- Users will be loaded here -->
-                </div>
+            <div class="filter-bar">
+                <select id="voucherProductFilter" class="form-select">
+                    <option value="">Select Product</option>
+                </select>
+                <button class="btn-secondary" onclick="refreshVoucherMenus()">
+                    <i class="fas fa-refresh"></i> Refresh
+                </button>
             </div>
 
-            <!-- Products Management Page -->
-            <div id="productsPage" class="admin-page">
-                <div class="page-header">
-                    <h1>Product Management</h1>
-                    <button class="add-btn" id="addProductBtn">
-                        <i class="fas fa-plus"></i> Add Product
-                    </button>
-                </div>
-                <div id="productsList" class="products-list">
-                    <!-- Products will be loaded here -->
-                </div>
-            </div>
-
-            <!-- Orders Management Page -->
-            <div id="ordersPage" class="admin-page">
-                <div class="page-header">
-                    <h1>Order Management</h1>
-                    <p>Review and approve orders</p>
-                </div>
-                <div class="orders-filters">
-                    <select id="orderStatusFilter" class="filter-select">
-                        <option value="">All Orders</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
-                    <button id="refreshOrders" class="refresh-btn">
-                        <i class="fas fa-sync"></i> Refresh
-                    </button>
-                </div>
-                <div id="ordersList" class="orders-list">
-                    <!-- Orders will be loaded here -->
-                </div>
-            </div>
-
-            <!-- Payments Management Page -->
-            <div id="paymentsPage" class="admin-page">
-                <div class="page-header">
-                    <h1>Payment Methods</h1>
-                    <button class="add-btn" id="addPaymentBtn">
-                        <i class="fas fa-plus"></i> Add Payment Method
-                    </button>
-                </div>
-                <div id="paymentsList" class="payments-list">
-                    <!-- Payment methods will be loaded here -->
-                </div>
-            </div>
-
-            <!-- News Management Page -->
-            <div id="newsPage" class="admin-page">
-                <div class="page-header">
-                    <h1>News Management</h1>
-                    <button class="add-btn" id="addNewsBtn">
-                        <i class="fas fa-plus"></i> Add News</button>
-                </div>
-                <div id="newsList" class="news-list">
-                    <!-- News will be loaded here -->
-                </div>
-            </div>
-
-            <!-- Social Media Management Page -->
-            <div id="socialPage" class="admin-page">
-                <div class="page-header">
-                    <h1>Social Media Links</h1>
-                    <button class="add-btn" id="addSocialBtn">
-                        <i class="fas fa-plus"></i> Add Social Link
-                    </button>
-                </div>
-                <div id="socialList" class="social-list">
-                    <!-- Social links will be loaded here -->
-                </div>
-            </div>
-
-            <!-- About Management Page -->
-            <div id="aboutPage" class="admin-page">
-                <div class="page-header">
-                    <h1>About Section</h1>
-                    <p>Manage company information</p>
-                </div>
-                <div id="aboutForm" class="about-form">
-                    <!-- About form will be loaded here -->
+            <div class="voucher-menus-container">
+                <div class="voucher-menus-grid" id="voucherMenusGrid">
+                    <!-- Voucher menus will be loaded here -->
                 </div>
             </div>
         </section>
-    </div>
 
-    <!-- Modal for forms -->
-    <div id="adminModal" class="modal">
+        <!-- Orders Tab -->
+        <section id="ordersTab" class="tab-content">
+            <div class="section-header">
+                <h2>Order Management</h2>
+                <div class="order-stats">
+                    <div class="stat-card pending">
+                        <h3 id="pendingCount">0</h3>
+                        <p>Pending</p>
+                    </div>
+                    <div class="stat-card approved">
+                        <h3 id="approvedCount">0</h3>
+                        <p>Approved</p>
+                    </div>
+                    <div class="stat-card rejected">
+                        <h3 id="rejectedCount">0</h3>
+                        <p>Rejected</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <select id="orderStatusFilter" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <input type="date" id="orderDateFilter" class="form-input">
+                <input type="text" id="orderSearchInput" class="form-input" placeholder="Search orders...">
+            </div>
+
+            <div class="orders-table-container">
+                <table class="orders-table" id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Product</th>
+                            <th>Game ID</th>
+                            <th>Amount</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <!-- Orders will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- News Tab -->
+        <section id="newsTab" class="tab-content">
+            <div class="section-header">
+                <h2>News Management</h2>
+                <button class="btn-primary" onclick="showAddNewsModal()">
+                    <i class="fas fa-plus"></i> Add News
+                </button>
+            </div>
+
+            <div class="news-grid" id="newsGrid">
+                <!-- News items will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Page Icons Tab -->
+        <section id="iconsTab" class="tab-content">
+            <div class="section-header">
+                <h2>Page Icon Management</h2>
+                <button class="btn-primary" onclick="showAddPageIconModal()">
+                    <i class="fas fa-plus"></i> Add Page Icon
+                </button>
+            </div>
+
+            <div class="page-icons-grid" id="pageIconsGrid">
+                <!-- Page icons will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section id="settingsTab" class="tab-content">
+            <div class="section-header">
+                <h2>Website Settings</h2>
+            </div>
+
+            <div class="settings-sections">
+                <!-- Website Logo -->
+                <div class="setting-card">
+                    <h3>Website Logo</h3>
+                    <div class="logo-preview" id="logoPreview">
+                        <img src="/assets/images/logo.png" alt="Current Logo" id="currentLogo">
+                    </div>
+                    <div class="file-upload">
+                        <input type="file" id="logoUpload" accept="image/*" onchange="previewLogo(event)">
+                        <label for="logoUpload" class="btn-secondary">
+                            <i class="fas fa-upload"></i> Upload New Logo
+                        </label>
+                    </div>
+                    <button class="btn-primary" onclick="updateWebsiteLogo()">
+                        <i class="fas fa-save"></i> Save Logo
+                    </button>
+                </div>
+
+                <!-- Payment Settings -->
+                <div class="setting-card">
+                    <h3>Payment Information</h3>
+                    <div class="payment-settings">
+                        <div class="form-group">
+                            <label>KBZ Pay Number</label>
+                            <input type="text" id="kbzPayNumber" class="form-input" placeholder="09xxxxxxxx">
+                        </div>
+                        <div class="form-group">
+                            <label>Wave Pay Number</label>
+                            <input type="text" id="wavePayNumber" class="form-input" placeholder="09xxxxxxxx">
+                        </div>
+                        <div class="form-group">
+                            <label>AYA Pay Number</label>
+                            <input type="text" id="ayaPayNumber" class="form-input" placeholder="09xxxxxxxx">
+                        </div>
+                        <button class="btn-primary" onclick="updatePaymentSettings()">
+                            <i class="fas fa-save"></i> Save Payment Settings
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Database Stats -->
+                <div class="setting-card">
+                    <h3>Database Statistics</h3>
+                    <div class="database-stats" id="databaseStats">
+                        <!-- Stats will be loaded here -->
+                    </div>
+                    <button class="btn-secondary" onclick="refreshDatabaseStats()">
+                        <i class="fas fa-refresh"></i> Refresh Stats
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+
+    <!-- Add/Edit Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Modal Title</h2>
+                <h3 id="productModalTitle">Add Product</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Dynamic content -->
+            <div class="modal-body">
+                <form id="productForm">
+                    <input type="hidden" id="productId">
+
+                    <div class="form-group">
+                        <label for="productName">Product Name *</label>
+                        <input type="text" id="productName" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="productDescription">Description</label>
+                        <textarea id="productDescription" class="form-textarea" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="productCategory">Category *</label>
+                            <select id="productCategory" class="form-select" required>
+                                <option value="">Select Category</option>
+                                <option value="pubg">PUBG Mobile</option>
+                                <option value="ml">Mobile Legends</option>
+                                <option value="telegram">Telegram Premium</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="productPrice">Price (MMK) *</label>
+                            <input type="number" id="productPrice" class="form-input" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="productStatus">Status</label>
+                        <select id="productStatus" class="form-select">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Product Images</label>
+                        <div class="image-upload-area" id="imageUploadArea">
+                            <div class="upload-placeholder" onclick="triggerImageUpload()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to upload images</p>
+                                <small>Supports multiple images</small>
+                            </div>
+                            <input type="file" id="productImages" multiple accept="image/*" onchange="previewProductImages(event)" style="display: none;">
+                        </div>
+                        <div class="image-previews" id="imagePreviewsContainer">
+                            <!-- Image previews will appear here -->
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Product
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- User Details Modal -->
-    <div id="userModal" class="modal">
+    <!-- Add/Edit Voucher Menu Modal -->
+    <div id="voucherMenuModal" class="modal">
+        <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>User Details</h2>
+                <h3 id="voucherMenuModalTitle">Add Voucher Menu</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body" id="userModalBody">
-                <!-- User details -->
+            <div class="modal-body">
+                <form id="voucherMenuForm">
+                    <input type="hidden" id="voucherMenuId">
+
+                    <div class="form-group">
+                        <label for="voucherMenuProduct">Product *</label>
+                        <select id="voucherMenuProduct" class="form-select" required>
+                            <option value="">Select Product</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="voucherMenuName">Menu Name *</label>
+                        <input type="text" id="voucherMenuName" class="form-input" required placeholder="e.g., 60 UC">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="voucherMenuPrice">Price (MMK) *</label>
+                            <input type="number" id="voucherMenuPrice" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="voucherMenuOrder">Display Order</label>
+                            <input type="number" id="voucherMenuOrder" class="form-input" value="1">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Menu Icon</label>
+                        <div class="icon-upload-area">
+                            <div class="icon-preview" id="voucherIconPreview">
+                                <img src="/assets/icons/voucher-default.png" alt="Icon Preview" id="voucherIconImg">
+                            </div>
+                            <div class="file-upload">
+                                <input type="file" id="voucherMenuIcon" accept="image/*" onchange="previewVoucherIcon(event)">
+                                <label for="voucherMenuIcon" class="btn-secondary">
+                                    <i class="fas fa-upload"></i> Upload Icon
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="voucherMenuActive">Status</label>
+                        <select id="voucherMenuActive" class="form-select">
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('voucherMenuModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Voucher Menu
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <!-- Order Details Modal -->
     <div id="orderModal" class="modal">
+        <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Order Details</h2>
+                <h3>Order Details</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body" id="orderModalBody">
-                <!-- Order details -->
+            <div class="modal-body">
+                <div id="orderDetailsContent">
+                    <!-- Order details will be loaded here -->
+                </div>
+
+                <div class="admin-actions">
+                    <h4>Admin Actions</h4>
+                    <div class="form-group">
+                        <label for="adminNotes">Admin Notes</label>
+                        <textarea id="adminNotes" class="form-textarea" rows="3" placeholder="Enter notes for this order..."></textarea>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-success" onclick="approveOrder()">
+                            <i class="fas fa-check"></i> Approve Order
+                        </button>
+                        <button class="btn-danger" onclick="rejectOrder()">
+                            <i class="fas fa-times"></i> Reject Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit News Modal -->
+    <div id="newsModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="newsModalTitle">Add News</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newsForm">
+                    <input type="hidden" id="newsId">
+
+                    <div class="form-group">
+                        <label for="newsTitle">News Title *</label>
+                        <input type="text" id="newsTitle" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newsContent">Content *</label>
+                        <textarea id="newsContent" class="form-textarea" rows="6" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>News Images</label>
+                        <div class="image-upload-area" id="newsImageUploadArea">
+                            <div class="upload-placeholder" onclick="triggerNewsImageUpload()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to upload news images</p>
+                                <small>Supports multiple images</small>
+                            </div>
+                            <input type="file" id="newsImages" multiple accept="image/*" onchange="previewNewsImages(event)" style="display: none;">
+                        </div>
+                        <div class="image-previews" id="newsImagePreviewsContainer">
+                            <!-- Image previews will appear here -->
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newsStatus">Status</label>
+                        <select id="newsStatus" class="form-select">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('newsModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save News
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Page Icon Modal -->
+    <div id="pageIconModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="pageIconModalTitle">Add Page Icon</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="pageIconForm">
+                    <input type="hidden" id="pageIconId">
+
+                    <div class="form-group">
+                        <label for="pageIconName">Page Name *</label>
+                        <input type="text" id="pageIconName" class="form-input" required placeholder="e.g., pubg, ml, telegram">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pageIconDisplayName">Display Name *</label>
+                        <input type="text" id="pageIconDisplayName" class="form-input" required placeholder="e.g., PUBG Mobile">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pageIconOrder">Display Order</label>
+                        <input type="number" id="pageIconOrder" class="form-input" value="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Page Icon</label>
+                        <div class="icon-upload-area">
+                            <div class="icon-preview" id="pageIconPreview">
+                                <img src="/assets/icons/default.png" alt="Icon Preview" id="pageIconImg">
+                            </div>
+                            <div class="file-upload">
+                                <input type="file" id="pageIconFile" accept="image/*" onchange="previewPageIcon(event)">
+                                <label for="pageIconFile" class="btn-secondary">
+                                    <i class="fas fa-upload"></i> Upload Icon
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pageIconActive">Status</label>
+                        <select id="pageIconActive" class="form-select">
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal('pageIconModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Page Icon
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm Action</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure you want to perform this action?</p>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+                    <button class="btn-danger" id="confirmActionBtn">Confirm</button>
+                </div>
             </div>
         </div>
     </div>
