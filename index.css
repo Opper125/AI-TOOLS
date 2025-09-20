@@ -17,8 +17,8 @@
     --error-color: #ff4444;
     --warning-color: #ffaa00;
     --text-primary: #ffffff;
-    --text-secondary: #c7393c;
-    --text-muted: #8098;
+    --text-secondary: #299393;
+    --text-muted: #862222;
     --border-radius: 16px;
     --border-radius-small: 8px;
     --box-shadow: 0 8px 32px rgba(0, 180, 255, 0.1);
@@ -1320,7 +1320,7 @@ body {
     }
     
     .logo {
-        height: 100px;
+        height: 70px;
     }
     
     .nav-menu {
